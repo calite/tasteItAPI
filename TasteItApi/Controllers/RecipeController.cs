@@ -18,38 +18,50 @@ namespace TasteItApi.Controllers
         private readonly IGraphClient _client;
         private IRawGraphClient _rawClient;
 
+        //DOC: https://github.com/DotNet4Neo4j/Neo4jClient/wiki
+
+
         public RecipeController(IGraphClient client)
         {
             _client = client;
         }
 
         [HttpGet("/recipes")]
-        public async Task<ActionResult<User>> GetAllRecipes()
+        public async Task<ActionResult<Recipe>> GetAllRecipes()
         {
-
-            //"MATCH (n1:User)-[:Created]-(n2:Recipe) RETURN n2.name, n2.description, n2.steps, n2.image, n2.dateCreated, n2.country, n1.username, n2.difficulty, n2.tags, n2.ingredients, ID(n2);;
+            //devuelve las recetas seguido del usuario que la creo
             var result = await _client.Cypher
-                            .Match("(r:Recipe)")
-                            .Return(r => r.As<Recipe>())
-                            .ResultsAsync;
+                .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                .Return((recipe, user) => new
+                {
+                    Recipe = recipe.As<Recipe>(),
+                    User = user.As<User>()
+                })
+                .ResultsAsync;
 
-            var recipes = result.ToList();
+            var results = result.ToList();
 
-            if (recipes.Count == 0)
+            if (results.Count == 0)
             {
                 return NotFound();
             }
 
-            return Ok(recipes);
+            return Ok(results);
         }
 
         [HttpGet("/recipe/byname/{name}")]
         public async Task<ActionResult<Recipe>> GetRecipeByName(string name)
         {
+            //devuelve recetas filtrando por nombre seguido del usuario que la creo
             var result = await _client.Cypher
-                            .Match("(r:Recipe)")
-                            .Where((Recipe r) => r.name.Contains(name))
-                            .Return(r => r.As<Recipe>())
+                            .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                            .Where((Recipe recipe) => recipe.name.Contains(name))
+                            .Return((recipe, user) => new
+                            {
+                                Recipe = recipe.As<Recipe>(),
+                                User = user.As<User>()
+
+                            })
                             .ResultsAsync;
 
             var recipe = result.ToList();
@@ -65,10 +77,16 @@ namespace TasteItApi.Controllers
         [HttpGet("/recipe/bycountry/{country}")]
         public async Task<ActionResult<Recipe>> GetRecipeByCountry(string country)
         {
+            //filtramos recetas por ciudad seguido del usuario que la creo
             var result = await _client.Cypher
-                            .Match("(r:Recipe)")
+                            .Match("(recipe:Recipe)-[:Created]-(user:User)")
                             .Where((Recipe r) => r.country.Contains(country))
-                            .Return(r => r.As<Recipe>())
+                            .Return((recipe, user) => new
+                            {
+                                Recipe = recipe.As<Recipe>(),
+                                User = user.As<User>()
+
+                            })
                             .ResultsAsync;
 
             var recipe = result.ToList();
@@ -102,7 +120,7 @@ namespace TasteItApi.Controllers
             return Ok(creators);
         }
 
-        //no furula
+        //ARREGLAR
         [HttpGet("/recipe/byingredients/{ingredients}")]
         public async Task<ActionResult<List<Recipe>>> GetRecipeByIngredients(string ingredients)
         {
@@ -126,15 +144,15 @@ namespace TasteItApi.Controllers
             return Ok(recipes);
         }
 
-
-        [HttpPost("/create")]
-        public async Task<IActionResult> CreateRecipe(string token, string name, string description, string country, int difficulty, string ingredients, string steps, string tags )
+        //CREAR RECETA
+        [HttpPost("/recipe/create")]
+        public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, int difficulty, string ingredients, string steps, string tags)
         {
 
             //EL TOKEN SE RECOGERA DE LA SESION
             //LA IMAGEN SE DEBE RECOGER DEL CLIENTE
 
-            token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
             string today = DateTime.Today.ToShortDateString();
 
@@ -161,5 +179,185 @@ namespace TasteItApi.Controllers
             return Ok(result);
         }
 
+        //COMMENTARIO EN LA RECETA
+        [HttpPost("/recipe/comment_recipe/{rid}")]
+        public async Task<IActionResult> PostCommentRecipe(int rid, string token, string comment, float rating)
+        {
+            string today = DateTime.Today.ToShortDateString();
+
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User),(r:Recipe)")
+                .Where("ID(r) =" + rid)
+                .AndWhere("u.token ='" + token + "'")
+                .Create("(u) -[c:Commented{ comment:$comment, rating:$rating, dateCreated:$dateCreated}]->(r)")
+                .WithParam("comment", comment)
+                .WithParam("rating", rating)
+                .WithParam("dateCreated", today)
+                .Return(r => r.As<Recipe>())
+                .ResultsAsync;
+
+            var recipes = result.ToList();
+
+            if (recipes.Count == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(recipes);
+        }
+
+        //REPORTAR UNA RECETA
+        [HttpPost("/recipe/report_recipe/{rid}")]
+        public async Task<IActionResult> PostReportRecipe(int rid, string token, string comment)
+        {
+            string today = DateTime.Today.ToShortDateString();
+
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User),(r:Recipe)")
+                .Where("ID(r) =" + rid)
+                .AndWhere("u.token ='" + token + "'")
+                .Create("(u) -[:Reported{ comment:$comment, dateCreated:$dateCreated}]->(r)")
+                .WithParam("comment", comment)
+                .WithParam("dateCreated", today)
+                .Return(r => r.As<Recipe>())
+                .ResultsAsync;
+
+            var recipes = result.ToList();
+
+            if (recipes.Count == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(recipes);
+        }
+
+        //CONFIRMAR SI UNA RECETA TIENE ME GUSTA
+        [HttpGet("/recipe/isliked")]
+        public async Task<IActionResult> GetRecipeIsLiked(int rid, string token)
+        {
+
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User)-[c:Liked]->(r:Recipe)")
+                .Where("ID(r) = $rid")
+                .AndWhere("u.token = $token")
+                .WithParam("rid", rid)
+                .WithParam("token", token)
+                .Return(r => r.As<Recipe>())
+                .ResultsAsync;
+
+            var recipes = result.ToList();
+
+            if (recipes.Count == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok();
+        }
+
+        //DA O QUITA LIKE A UNA RECETA
+        [HttpPost("/recipe/like/{rid}")]
+        public async Task<IActionResult> PostLikeRecipe(int rid, string token)
+        {
+            string today = DateTime.Today.ToShortDateString();
+
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User)-[c:Liked]->(r:Recipe)")
+                .Where("ID(r) =" + rid)
+                .AndWhere("u.token ='" + token + "'")
+                .Return(r => r.As<Recipe>())
+                .ResultsAsync;
+
+            var recipes = result.ToList();
+
+            if (recipes.Count != 0) //si no es 0 por lo tanto existe y lo borra
+            {
+                result = await _client.Cypher
+                    .Match("(u:User)-[c:Liked]->(r:Recipe)")
+                    .Where("ID(r) =" + rid)
+                    .AndWhere("u.token ='" + token + "'")
+                    .Delete("c")
+                    .Return(r => r.As<Recipe>())
+                    .ResultsAsync;
+
+                recipes = result.ToList();
+            }
+            else
+            {
+                result = await _client.Cypher
+                    .Match("(u:User),(r:Recipe)")
+                    .Where("ID(r) =" + rid)
+                    .AndWhere("u.token ='" + token + "'")
+                    .Create("(u)-[:Liked{dateCreated:'" + today + "'}]->(r)")
+                    .Return(r => r.As<Recipe>())
+                    .ResultsAsync;
+
+                recipes = result.ToList();
+            }
+
+            return Ok(recipes);
+        }
+
+        //DEVUELVE LOS USUARIOS QUE HAN DADO LIKE A UNA RECETA
+        [HttpGet("/recipe/likes")]
+        public async Task<IActionResult> GetRecipeLikes(int rid)
+        {
+
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User)-[c:Liked]->(r:Recipe)")
+                .Where("ID(r) = $rid")
+                .WithParam("rid", rid)
+                .Return(u => u.As<User>())
+                .ResultsAsync;
+
+            var users = result.ToList();
+
+            if (users.Count == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(users);
+        }
+
+        //DEVUELVE LOS COMENTARIOS DE UNA RECETA
+        [HttpGet("/recipe/comments")]
+        public async Task<IActionResult> GetCommentsOnRecipe(int rid)
+        {
+
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(r:Recipe)-[c:Commented]-(u:User)")
+                .Where("ID(r) = $rid")
+                .WithParam("rid", rid)
+                .Return(c => c.As<Comment>())
+                .ResultsAsync;
+
+            var comments = result.ToList();
+
+            if (comments.Count == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(comments);
+        }
+
+
+
     }
+
+
 }

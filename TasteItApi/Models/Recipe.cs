@@ -5,6 +5,7 @@ namespace TasteItApi.Models
 {
     public class Recipe
     {
+        public int id { get; set; } // NO DEVUELVE EL ID
         public string name { get; set; }
         public string description { get; set; }
         public int difficulty { get; set; }
@@ -14,7 +15,7 @@ namespace TasteItApi.Models
         public List<string> ingredients { get; set; }
         public List<string> tags { get; set; }
         public List<string> steps { get; set; }
-        
+
     }
 
 }
