@@ -72,7 +72,7 @@ namespace TasteItApi.Controllers
         }
 
         //NUMERO DE LIKES DEL USUARIO
-        [HttpGet("/likes")]
+        [HttpGet("/liked_recipes")]
         public async Task<IActionResult> GetRecipesLiked(string token)
         {
 
@@ -95,18 +95,30 @@ namespace TasteItApi.Controllers
             return Ok(recipes);
         }
 
-        //RECETAS DE TUS SEGUIDORES
-        [HttpGet("/followed/recipes")]
+        //devuelve las RECETAS DE TUS SEGUIDORES
+        [HttpGet("/followers_recipes")]
         public async Task<IActionResult> GetRecipesFollowed(string token)
         {
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
+            /*
+                match (u1:User)-[f:Following]->(u2:User)
+                where u1.token = "ZdoWamcZHHT26CG9IM7tKnze3ul2"
+                match (r:Recipe)-[c:Created]->(u2)
+                return u1,f,r,c,u2
+            */
+
             var result = await _client.Cypher
-                .Match("(u:User)-[c:Liked]->(r:Recipe)")
-                .Where("u.token = $token")
+                .Match("(u1:User)-[f:Following]->(u2:User)")
+                .Where("u1.token = $token")
+                .Match("(r:Recipe)-[c:Created]->(u2)")
                 .WithParam("token", token)
-                .Return(r => r.As<Recipe>())
+                .Return((r, u2) => new
+                {
+                    Recipe = r.As<Recipe>(),
+                    User = u2.As<User>()
+                })
                 .ResultsAsync;
 
             var recipes = result.ToList();
@@ -141,7 +153,7 @@ namespace TasteItApi.Controllers
             return Ok(result);
         }
         //usuario A empieza a seguir al usuario B, o lo quita
-        [HttpPost("/follow/{receiverToken}")]
+        [HttpPost("/follow")]
         public async Task<IActionResult> PostFollowUser(string senderToken, string receiverToken)
         {
 
@@ -208,14 +220,8 @@ namespace TasteItApi.Controllers
                 users = result.ToList();
             }
 
-
-
             return Ok(users);
         }
-
-
-
-
 
 
     }

@@ -17,6 +17,7 @@ namespace TasteItApi.Controllers
     {
         private readonly IGraphClient _client;
         private IRawGraphClient _rawClient;
+        private object cmt;
 
         //DOC: https://github.com/DotNet4Neo4j/Neo4jClient/wiki
 
@@ -26,12 +27,48 @@ namespace TasteItApi.Controllers
             _client = client;
         }
 
-        [HttpGet("/recipes")]
+        [HttpGet("/all_recipes")]
         public async Task<ActionResult<Recipe>> GetAllRecipes()
         {
             //devuelve las recetas seguido del usuario que la creo
             var result = await _client.Cypher
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                .Return((recipe, user) => new
+                {
+                    Recipe = recipe.As<Recipe>(), //OJO: devuelve un array bidimensional de objetos
+                    User = user.As<User>()
+                })
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            if (results.Count == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(results);
+        }
+
+        [HttpGet("/random_recipes/{limit}")]
+        public async Task<ActionResult<Recipe>> GetRandomRecipesWithLimit(int limit)
+        {
+
+            /*
+                match (u:User)-[c:Created]-(r:Recipe)
+                with u, rand() as rand
+                order by rand limit 5
+                match (u:User)-[c:Created]-(r:Recipe)
+                return r ,u , c , rand() as rand 
+            */
+
+            //devuelve un numero aleatorio de recetas seguido del usuario que la creo
+            var result = await _client.Cypher
+                .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                .With("recipe, rand() as rand")
+                .OrderBy("rand limit $limit")
+                .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                .WithParam("limit",limit)
                 .Return((recipe, user) => new
                 {
                     Recipe = recipe.As<Recipe>(),
@@ -49,7 +86,7 @@ namespace TasteItApi.Controllers
             return Ok(results);
         }
 
-        [HttpGet("/recipe/byname/{name}")]
+        [HttpGet("/byname/{name}")]
         public async Task<ActionResult<Recipe>> GetRecipeByName(string name)
         {
             //devuelve recetas filtrando por nombre seguido del usuario que la creo
@@ -74,7 +111,7 @@ namespace TasteItApi.Controllers
             return Ok(recipe);
         }
 
-        [HttpGet("/recipe/bycountry/{country}")]
+        [HttpGet("/bycountry/{country}")]
         public async Task<ActionResult<Recipe>> GetRecipeByCountry(string country)
         {
             //filtramos recetas por ciudad seguido del usuario que la creo
@@ -99,15 +136,21 @@ namespace TasteItApi.Controllers
             return Ok(recipe);
         }
 
-        [HttpGet("/recipe/byuser/{token}")]
+        [HttpGet("/byuser/{token}")]
         public async Task<ActionResult<User>> GetRecipesByUser(string token)
         {
 
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
             //MATCH (n1:User)-[:Created]-(n2:Recipe) WHERE n1.token = '" + uid + "' RETURN n1.username, n2;
             var result = await _client.Cypher
-                            .Match("(u:User)-[:Created]-(r:Recipe)")
-                            .Where((User u) => u.token == token)
-                            .Return(r => r.As<Recipe>())
+                            .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                            .Where((User user) => user.token == token)
+                             .Return((recipe, user) => new
+                             {
+                                 Recipe = recipe.As<Recipe>(),
+                                 User = user.As<User>()
+                             })
                             .ResultsAsync;
 
             var creators = result.ToList();
@@ -121,17 +164,19 @@ namespace TasteItApi.Controllers
         }
 
         //ARREGLAR
-        [HttpGet("/recipe/byingredients/{ingredients}")]
+        [HttpGet("/byingredients/{ingredients}")]
         public async Task<ActionResult<List<Recipe>>> GetRecipeByIngredients(string ingredients)
         {
 
-            List<string> listIng = ingredients.Split(",").ToList();
+            List<string> listIng = ingredients.Replace(" ", "").Split(",").ToList();
 
             var result = await _client.Cypher
-                            .Match("(r:Recipe)")
-                            .Where("$ingredient IN r.ingredients")
-                            .WithParam("ingredient", listIng)
-                            .Return(r => r.As<Recipe>())
+                            .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                            .Return((recipe, user) => new
+                            {
+                                Recipe = recipe.As<Recipe>(),
+                                User = user.As<User>()
+                            })
                             .ResultsAsync;
 
             var recipes = result.ToList();
@@ -141,11 +186,25 @@ namespace TasteItApi.Controllers
                 return NotFound();
             }
 
-            return Ok(recipes);
+            Dictionary<Recipe, User> listRecipesFiltered = new Dictionary<Recipe, User>();
+
+            for(int i=0; i < recipes.Count; i++)
+            {
+                //miramos si la lista de los ingredientes contiene alguno de los elementos de los introducidos por el usuario
+                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => y == x));
+
+                if (hasMatch)
+                {
+                    listRecipesFiltered.Add(recipes[i].Recipe, recipes[i].User);
+                }
+
+            }
+
+            return Ok(listRecipesFiltered.ToList());
         }
 
         //CREAR RECETA
-        [HttpPost("/recipe/create")]
+        [HttpPost("/create")]
         public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, int difficulty, string ingredients, string steps, string tags)
         {
 
@@ -161,9 +220,9 @@ namespace TasteItApi.Controllers
             List<string> listTags = tags.Split(",").ToList();
 
             var result = await _client.Cypher
-                            .Match("(u: User)")
-                            .Where((User u) => u.token == token)
-                            .Create("(u)-[:Created]->(r:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags})")
+                            .Match("(user: User)")
+                            .Where((User user) => user.token == token)
+                            .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags})-[c:Created]->(user)")
                             .WithParam("name", name)
                             .WithParam("description", description)
                             .WithParam("country", country)
@@ -173,14 +232,18 @@ namespace TasteItApi.Controllers
                             .WithParam("steps", listSteps)
                             .WithParam("ingredients", listIng)
                             .WithParam("tags", listTags)
-                            .Return(r => r.As<Recipe>())
+                            .Return((recipe, user) => new
+                            {
+                                Recipe = recipe.As<Recipe>(),
+                                User = user.As<User>()
+                            })
                             .ResultsAsync;
 
             return Ok(result);
         }
 
         //COMMENTARIO EN LA RECETA
-        [HttpPost("/recipe/comment_recipe/{rid}")]
+        [HttpPost("/comment_recipe")]
         public async Task<IActionResult> PostCommentRecipe(int rid, string token, string comment, float rating)
         {
             string today = DateTime.Today.ToShortDateString();
@@ -188,28 +251,33 @@ namespace TasteItApi.Controllers
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
             var result = await _client.Cypher
-                .Match("(u:User),(r:Recipe)")
-                .Where("ID(r) =" + rid)
-                .AndWhere("u.token ='" + token + "'")
-                .Create("(u) -[c:Commented{ comment:$comment, rating:$rating, dateCreated:$dateCreated}]->(r)")
+                .Match("(user:User),(recipe:Recipe)")
+                .Where("ID(recipe) =" + rid)
+                .AndWhere("user.token ='" + token + "'")
+                .Create("(user)-[cmt:Commented{ comment:$comment, rating:$rating, dateCreated:$dateCreated}]->(recipe)")
                 .WithParam("comment", comment)
                 .WithParam("rating", rating)
                 .WithParam("dateCreated", today)
-                .Return(r => r.As<Recipe>())
+                .Return((recipe, user, cmt) => new
+                {
+                    Recipe = recipe.As<Recipe>(),
+                    User = user.As<User>(),
+                    cmt = cmt.As<Comment>()
+                })
                 .ResultsAsync;
 
-            var recipes = result.ToList();
+            var recipe = result.ToList();
 
-            if (recipes.Count == 0)
+            if (recipe.Count == 0)
             {
                 return NotFound();
             }
 
-            return Ok(recipes);
+            return Ok(recipe);
         }
 
         //REPORTAR UNA RECETA
-        [HttpPost("/recipe/report_recipe/{rid}")]
+        [HttpPost("/report_recipe")]
         public async Task<IActionResult> PostReportRecipe(int rid, string token, string comment)
         {
             string today = DateTime.Today.ToShortDateString();
@@ -217,13 +285,17 @@ namespace TasteItApi.Controllers
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
             var result = await _client.Cypher
-                .Match("(u:User),(r:Recipe)")
-                .Where("ID(r) =" + rid)
-                .AndWhere("u.token ='" + token + "'")
-                .Create("(u) -[:Reported{ comment:$comment, dateCreated:$dateCreated}]->(r)")
+                .Match("(user:User),(recipe:Recipe)")
+                .Where("ID(recipe) =" + rid)
+                .AndWhere("user.token ='" + token + "'")
+                .Create("(user)-[:Reported{comment:$comment,dateCreated:$dateCreated}]->(recipe)")
                 .WithParam("comment", comment)
                 .WithParam("dateCreated", today)
-                .Return(r => r.As<Recipe>())
+                .Return((recipe, user) => new
+                {
+                    Recipe = recipe.As<Recipe>(),
+                    User = user.As<User>()
+                })
                 .ResultsAsync;
 
             var recipes = result.ToList();
@@ -237,7 +309,7 @@ namespace TasteItApi.Controllers
         }
 
         //CONFIRMAR SI UNA RECETA TIENE ME GUSTA
-        [HttpGet("/recipe/isliked")]
+        [HttpGet("/isliked")]
         public async Task<IActionResult> GetRecipeIsLiked(int rid, string token)
         {
 
@@ -263,8 +335,8 @@ namespace TasteItApi.Controllers
         }
 
         //DA O QUITA LIKE A UNA RECETA
-        [HttpPost("/recipe/like/{rid}")]
-        public async Task<IActionResult> PostLikeRecipe(int rid, string token)
+        [HttpPost("/like")]
+        public async Task<IActionResult> PostLikeOnRecipe(int rid, string token)
         {
             string today = DateTime.Today.ToShortDateString();
 
@@ -308,8 +380,8 @@ namespace TasteItApi.Controllers
         }
 
         //DEVUELVE LOS USUARIOS QUE HAN DADO LIKE A UNA RECETA
-        [HttpGet("/recipe/likes")]
-        public async Task<IActionResult> GetRecipeLikes(int rid)
+        [HttpGet("/likes")]
+        public async Task<IActionResult> GetLikesOnRecipe(int rid)
         {
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
@@ -354,7 +426,6 @@ namespace TasteItApi.Controllers
 
             return Ok(comments);
         }
-
 
 
     }
