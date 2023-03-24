@@ -30,7 +30,7 @@ namespace TasteItApi.Controllers
             return Ok();
         }
         */
-        [HttpGet("/byname/{username}")]
+        [HttpGet("/user/byname/{username}")]
         public async Task<ActionResult<User>> GetUserByName(string username)
         {
             var result = await _client.Cypher
@@ -51,7 +51,7 @@ namespace TasteItApi.Controllers
         }
 
         //DEVUELVE EL USER SEGUN EL TOKEN
-        [HttpGet("/bytoken/{token}")]
+        [HttpGet("user/bytoken/{token}")]
         public async Task<ActionResult<User>> GetUserByToken(string token)
         {
             var result = await _client.Cypher
@@ -71,8 +71,8 @@ namespace TasteItApi.Controllers
             return Ok(user);
         }
 
-        //NUMERO DE LIKES DEL USUARIO
-        [HttpGet("/liked_recipes")]
+        //DEVUELVE LAS RECETAS  QUE A UN USUARIO LE GUSTAN
+        [HttpGet("/user/liked_recipes/{token}")]
         public async Task<IActionResult> GetRecipesLiked(string token)
         {
 
@@ -82,7 +82,11 @@ namespace TasteItApi.Controllers
                 .Match("(u:User)-[c:Liked]->(r:Recipe)")
                 .Where("u.token = $token")
                 .WithParam("token", token)
-                .Return(r => r.As<Recipe>())
+                .Return((r, u2) => new
+                {
+                    RecipeId = r.Id(),
+                    Recipe = r.As<Recipe>()
+                })
                 .ResultsAsync;
 
             var recipes = result.ToList();
@@ -96,7 +100,7 @@ namespace TasteItApi.Controllers
         }
 
         //devuelve las RECETAS DE TUS SEGUIDORES
-        [HttpGet("/followers_recipes")]
+        [HttpGet("/user/followers_recipes/{token}")]
         public async Task<IActionResult> GetRecipesFollowed(string token)
         {
 
@@ -116,6 +120,7 @@ namespace TasteItApi.Controllers
                 .WithParam("token", token)
                 .Return((r, u2) => new
                 {
+                    RecipeId = r.Id(),
                     Recipe = r.As<Recipe>(),
                     User = u2.As<User>()
                 })
@@ -131,7 +136,7 @@ namespace TasteItApi.Controllers
             return Ok(recipes);
         }
 
-        [HttpPost("/edit")]
+        [HttpPost("user/edit")]
         public async Task<IActionResult> PostChangesOnUser(string token, string username, string imgProfile, string biography)
         {
 
@@ -153,7 +158,7 @@ namespace TasteItApi.Controllers
             return Ok(result);
         }
         //usuario A empieza a seguir al usuario B, o lo quita
-        [HttpPost("/follow")]
+        [HttpPost("user/follow")]
         public async Task<IActionResult> PostFollowUser(string senderToken, string receiverToken)
         {
 
