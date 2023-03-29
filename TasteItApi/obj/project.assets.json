@@ -2377,11 +2377,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Practicas.soporte\\Desktop\\git\\tasteItAPI\\TasteItApi\\TasteItApi.csproj",
+      "projectUniqueName": "C:\\Users\\Practicas.soporte\\Downloads\\tasteItAPI-main\\TasteItApi\\TasteItApi.csproj",
       "projectName": "TasteItApi",
-      "projectPath": "C:\\Users\\Practicas.soporte\\Desktop\\git\\tasteItAPI\\TasteItApi\\TasteItApi.csproj",
+      "projectPath": "C:\\Users\\Practicas.soporte\\Downloads\\tasteItAPI-main\\TasteItApi\\TasteItApi.csproj",
       "packagesPath": "C:\\Users\\Practicas.soporte\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Practicas.soporte\\Desktop\\git\\tasteItAPI\\TasteItApi\\obj\\",
+      "outputPath": "C:\\Users\\Practicas.soporte\\Downloads\\tasteItAPI-main\\TasteItApi\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\DevExpress 20.2\\.NET Core Desktop Libraries\\Offline Packages",

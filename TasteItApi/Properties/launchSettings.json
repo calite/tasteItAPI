@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
@@ -11,13 +11,16 @@
   "profiles": {
     "TasteItApi": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:7076;http://localhost:5269",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "NEO_URL": "neo4j+s:/dc95b24b.databases.neo4j.io",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "NEO_PASSWORD": "sBQ6Fj2oXaFltjizpmTDhyEO9GDiqGM1rG-zelf17kg",
+        "NEO_USER": "neo4j"
+      },
+      "applicationUrl": "https://localhost:7076;http://localhost:5269",
+      "dotnetRunMessages": true
     },
     "IIS Express": {
       "commandName": "IISExpress",

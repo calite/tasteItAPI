@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "VqWnNSjlUFlo0qxM+DQER9aWymmlvFiQwPL3rWLP2/U9cnzuOkUZRHB1p0ywnu255VAEvwgyk7qXqQEQDxc38Q==",
+  "dgSpecHash": "fwnrgj21i24yyzdnUG+dXZFmzWjtssmmoWphHhcQsE3XccHrbagwSb8Fisvnm3D7RCwSd14eM0VGRwAmopVCgg==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Practicas.soporte\\Desktop\\git\\tasteItAPI\\TasteItApi\\TasteItApi.csproj",
+  "projectFilePath": "C:\\Users\\Practicas.soporte\\Downloads\\tasteItAPI-main\\TasteItApi\\TasteItApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Practicas.soporte\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\5.0.0\\microsoft.bcl.asyncinterfaces.5.0.0.nupkg.sha512",
     "C:\\Users\\Practicas.soporte\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
