@@ -132,3 +132,5 @@ C:\Users\Practicas.soporte\Downloads\tasteItAPI-main\TasteItApi\obj\Debug\net6.0
 C:\Users\Practicas.soporte\Downloads\tasteItAPI-main\TasteItApi\obj\Debug\net6.0\TasteItApi.pdb
 C:\Users\Practicas.soporte\Downloads\tasteItAPI-main\TasteItApi\obj\Debug\net6.0\TasteItApi.genruntimeconfig.cache
 C:\Users\Practicas.soporte\Downloads\tasteItAPI-main\TasteItApi\obj\Debug\net6.0\ref\TasteItApi.dll
+C:\Users\Practicas.soporte\Desktop\git\tasteItAPI\TasteItApi\obj\Debug\net6.0\TasteItApi.Properties.Resources.resources
+C:\Users\Practicas.soporte\Desktop\git\tasteItAPI\TasteItApi\obj\Debug\net6.0\TasteItApi.csproj.GenerateResource.cache

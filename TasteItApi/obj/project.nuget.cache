@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "fwnrgj21i24yyzdnUG+dXZFmzWjtssmmoWphHhcQsE3XccHrbagwSb8Fisvnm3D7RCwSd14eM0VGRwAmopVCgg==",
+  "dgSpecHash": "VqWnNSjlUFlo0qxM+DQER9aWymmlvFiQwPL3rWLP2/U9cnzuOkUZRHB1p0ywnu255VAEvwgyk7qXqQEQDxc38Q==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Practicas.soporte\\Downloads\\tasteItAPI-main\\TasteItApi\\TasteItApi.csproj",
+  "projectFilePath": "C:\\Users\\Practicas.soporte\\Desktop\\git\\tasteItAPI\\TasteItApi\\TasteItApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Practicas.soporte\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\5.0.0\\microsoft.bcl.asyncinterfaces.5.0.0.nupkg.sha512",
     "C:\\Users\\Practicas.soporte\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
@@ -42,5 +42,12 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\system.threading.tasks\\4.3.0\\system.threading.tasks.4.3.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\system.valuetuple\\4.5.0\\system.valuetuple.4.5.0.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Problema al leer el archivo de caché C:\\Users\\Practicas.soporte\\Desktop\\git\\tasteItAPI\\TasteItApi\\obj\\project.nuget.cache : Invalid property identifier character: <. Path 'version', line 3, position 0."
+    }
+  ]
 }
