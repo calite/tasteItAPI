@@ -21,7 +21,7 @@ namespace TasteItApi.Controllers
         }
         /*
         [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] User user)
+        public async Task<IActionResult> PostCreateUser([FromBody] User user)
         {
             await _client.Cypher.Create("(u:User $user)")
                                 .WithParam("user", user)

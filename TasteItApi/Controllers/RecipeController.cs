@@ -93,7 +93,7 @@ namespace TasteItApi.Controllers
                 .With("recipe, rand() as rand")
                 .OrderBy("rand limit $limit")
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
-                .WithParam("limit",limit)
+                .WithParam("limit", limit)
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
@@ -218,7 +218,7 @@ namespace TasteItApi.Controllers
 
             Dictionary<Recipe, User> listRecipesFiltered = new Dictionary<Recipe, User>();
 
-            for(int i=0; i < recipes.Count; i++)
+            for (int i = 0; i < recipes.Count; i++)
             {
                 //miramos si la lista de los ingredientes contiene alguno de los elementos de los introducidos por el usuario
                 bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => y == x));
@@ -235,44 +235,47 @@ namespace TasteItApi.Controllers
 
         //CREAR RECETA
         [HttpPost("/recipe/create")]
-        public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, int difficulty, string ingredients, string steps, string tags)
+        public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, string image, int difficulty, string ingredients, string steps, string tags)
         {
+            try
+            {
+                //EL TOKEN SE RECOGERA DE LA SESION
+                //LA IMAGEN SE DEBE RECOGER DEL CLIENTE
 
-            //EL TOKEN SE RECOGERA DE LA SESION
-            //LA IMAGEN SE DEBE RECOGER DEL CLIENTE
+                //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
-            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+                string today = DateTime.Today.ToShortDateString();
 
-            string today = DateTime.Today.ToShortDateString();
+                List<string> listIng = ingredients.Split(",").ToList();
+                List<string> listSteps = steps.Split(",").ToList();
+                List<string> listTags = tags.Split(",").ToList();
 
-            List<string> listIng = ingredients.Split(",").ToList();
-            List<string> listSteps = steps.Split(",").ToList();
-            List<string> listTags = tags.Split(",").ToList();
+                //NOTA: hay que autogenerar los tags
 
-            //NOTA: hay que autogenerar los tags
+                await _client.Cypher
+                    .Match("(user: User)")
+                    .Where((User user) => user.token == token)
+                    .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags})-[c:Created]->(user)")
+                    .WithParam("name", name)
+                    .WithParam("description", description)
+                    .WithParam("country", country)
+                    .WithParam("dateCreated", today)
+                    .WithParam("image", image)
+                    .WithParam("difficulty", difficulty)
+                    .WithParam("steps", listSteps)
+                    .WithParam("ingredients", listIng)
+                    .WithParam("tags", listTags)
+                    .ExecuteWithoutResultsAsync();
 
-            var result = await _client.Cypher
-                            .Match("(user: User)")
-                            .Where((User user) => user.token == token)
-                            .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags})-[c:Created]->(user)")
-                            .WithParam("name", name)
-                            .WithParam("description", description)
-                            .WithParam("country", country)
-                            .WithParam("dateCreated", today)
-                            .WithParam("image", "")
-                            .WithParam("difficulty", difficulty)
-                            .WithParam("steps", listSteps)
-                            .WithParam("ingredients", listIng)
-                            .WithParam("tags", listTags)
-                            .Return((recipe, user) => new
-                            {
-                                RecipeId = recipe.Id(),
-                                Recipe = recipe.As<Recipe>(),
-                                User = user.As<User>()
-                            })
-                            .ResultsAsync;
+                return Ok();
 
-            return Ok(result);
+                // No se devuelve nada explícitamente, ya que se usa "async Task" como tipo de retorno
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
+
         }
 
         //COMMENTARIO EN LA RECETA
@@ -454,7 +457,7 @@ namespace TasteItApi.Controllers
                 .Match("(recipe:Recipe)-[c:Commented]-(u:User)")
                 .Where("ID(recipe) = $rid")
                 .WithParam("rid", rid)
-                .Return((recipe,c, u) => new
+                .Return((recipe, c, u) => new
                 {
                     RecipeId = recipe.Id(),
                     Recipe = recipe.As<Recipe>(),
@@ -475,7 +478,47 @@ namespace TasteItApi.Controllers
         }
 
 
+        //UPDATES
+
+        //CREAR RECETA
+        [HttpPost("/recipe/edit")]
+        public async Task<IActionResult> PostEditRecipe(int rid, string name, string description, string country, string image, int difficulty, string ingredients, string steps, string tags)
+        {
+            try
+            {
+
+                List<string> listIng = ingredients.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                List<string> listSteps = steps.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                List<string> listTags = tags.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+
+
+                //NOTA: hay que autogenerar los tags
+
+                await _client.Cypher
+                    .Match("(r:Recipe)")
+                    .Where("Id(r)=" + rid)
+                    .Set("r.name =$name,r.description=$description,r.country =$country,r.image=$image,r.difficulty=$difficulty,r.steps=$listSteps,r.ingredients=$listIng,r.tags=$listTags ")
+                    .WithParam("name", name)
+                    .WithParam("description", description)
+                    .WithParam("country",country)
+                    .WithParam("image", image)
+                    .WithParam("difficulty",difficulty)
+                    .WithParam("listIng", listIng)
+                    .WithParam("listSteps", listSteps)
+                    .WithParam("listTags",listTags)
+                    .ExecuteWithoutResultsAsync();
+
+                return Ok();
+
+                // No se devuelve nada explícitamente, ya que se usa "async Task" como tipo de retorno
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
+
+
+        }
+
     }
-
-
 }
