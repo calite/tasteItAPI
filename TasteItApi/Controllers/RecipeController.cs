@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Net.WebSockets;
 using TasteItApi.Models;
+using TasteItApi.Requests;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace TasteItApi.Controllers
@@ -235,7 +236,8 @@ namespace TasteItApi.Controllers
 
         //CREAR RECETA
         [HttpPost("/recipe/create")]
-        public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, string image, int difficulty, string ingredients, string steps, string tags)
+        //public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, string image, int difficulty, string ingredients, string steps, string tags)
+        public async Task<IActionResult> PostCreateRecipe([FromBody] RecipeRequest recipeRequest)
         {
             try
             {
@@ -246,22 +248,22 @@ namespace TasteItApi.Controllers
 
                 string today = DateTime.Today.ToShortDateString();
 
-                List<string> listIng = ingredients.Split(",").ToList();
-                List<string> listSteps = steps.Split(",").ToList();
-                List<string> listTags = tags.Split(",").ToList();
+                List<string> listIng = recipeRequest.ingredients.Split(",").ToList();
+                List<string> listSteps = recipeRequest.steps.Split(",").ToList();
+                List<string> listTags = recipeRequest.tags.Split(",").ToList();
 
                 //NOTA: hay que autogenerar los tags
 
                 await _client.Cypher
                     .Match("(user: User)")
-                    .Where((User user) => user.token == token)
+                    .Where((User user) => user.token == recipeRequest.token)
                     .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags})-[c:Created]->(user)")
-                    .WithParam("name", name)
-                    .WithParam("description", description)
-                    .WithParam("country", country)
+                    .WithParam("name", recipeRequest.name)
+                    .WithParam("description", recipeRequest.description)
+                    .WithParam("country", recipeRequest.country)
                     .WithParam("dateCreated", today)
-                    .WithParam("image", image)
-                    .WithParam("difficulty", difficulty)
+                    .WithParam("image", recipeRequest.image)
+                    .WithParam("difficulty", recipeRequest.difficulty)
                     .WithParam("steps", listSteps)
                     .WithParam("ingredients", listIng)
                     .WithParam("tags", listTags)
@@ -280,7 +282,7 @@ namespace TasteItApi.Controllers
 
         //COMMENTARIO EN LA RECETA
         [HttpPost("/recipe/comment_recipe")]
-        public async Task<IActionResult> PostCommentRecipe(int rid, string token, string comment, float rating)
+        public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRequest commentRequest)
         {
             string today = DateTime.Today.ToShortDateString();
 
@@ -288,11 +290,11 @@ namespace TasteItApi.Controllers
 
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
-                .Where("ID(recipe) =" + rid)
-                .AndWhere("user.token ='" + token + "'")
+                .Where("ID(recipe) =" + commentRequest.rid)
+                .AndWhere("user.token ='" + commentRequest.token + "'")
                 .Create("(user)-[cmt:Commented{ comment:$comment, rating:$rating, dateCreated:$dateCreated}]->(recipe)")
-                .WithParam("comment", comment)
-                .WithParam("rating", rating)
+                .WithParam("comment", commentRequest.comment)
+                .WithParam("rating", commentRequest.rating)
                 .WithParam("dateCreated", today)
                 .Return((recipe, user, cmt) => new
                 {
@@ -315,7 +317,7 @@ namespace TasteItApi.Controllers
 
         //REPORTAR UNA RECETA
         [HttpPost("/recipe/report_recipe")]
-        public async Task<IActionResult> PostReportRecipe(int rid, string token, string comment)
+        public async Task<IActionResult> PostReportRecipe([FromBody] ReportRecipeRequest reportRecipeRequest)
         {
             string today = DateTime.Today.ToShortDateString();
 
@@ -323,10 +325,10 @@ namespace TasteItApi.Controllers
 
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
-                .Where("ID(recipe) =" + rid)
-                .AndWhere("user.token ='" + token + "'")
+                .Where("ID(recipe) =" + reportRecipeRequest.rid)
+                .AndWhere("user.token ='" + reportRecipeRequest.token + "'")
                 .Create("(user)-[:Reported{comment:$comment,dateCreated:$dateCreated}]->(recipe)")
-                .WithParam("comment", comment)
+                .WithParam("comment", reportRecipeRequest.comment)
                 .WithParam("dateCreated", today)
                 .Return((recipe, user) => new
                 {
@@ -374,7 +376,7 @@ namespace TasteItApi.Controllers
 
         //DA O QUITA LIKE A UNA RECETA
         [HttpPost("/recipe/like/{rid}_{token}")]
-        public async Task<IActionResult> PostLikeOnRecipe(int rid, string token)
+        public async Task<IActionResult> PostLikeOnRecipe(LikeRecipeRequest likeRecipeRequest)
         {
             string today = DateTime.Today.ToShortDateString();
 
@@ -382,8 +384,8 @@ namespace TasteItApi.Controllers
 
             var result = await _client.Cypher
                 .Match("(u:User)-[c:Liked]->(r:Recipe)")
-                .Where("ID(r) =" + rid)
-                .AndWhere("u.token ='" + token + "'")
+                .Where("ID(r) =" + likeRecipeRequest.rid)
+                .AndWhere("u.token ='" + likeRecipeRequest.token + "'")
                 .Return(r => r.As<Recipe>())
                 .ResultsAsync;
 
@@ -393,8 +395,8 @@ namespace TasteItApi.Controllers
             {
                 result = await _client.Cypher
                     .Match("(u:User)-[c:Liked]->(r:Recipe)")
-                    .Where("ID(r) =" + rid)
-                    .AndWhere("u.token ='" + token + "'")
+                    .Where("ID(r) =" + likeRecipeRequest.rid)
+                    .AndWhere("u.token ='" + likeRecipeRequest.token + "'")
                     .Delete("c")
                     .Return(r => r.As<Recipe>())
                     .ResultsAsync;
@@ -405,8 +407,8 @@ namespace TasteItApi.Controllers
             {
                 result = await _client.Cypher
                     .Match("(u:User),(r:Recipe)")
-                    .Where("ID(r) =" + rid)
-                    .AndWhere("u.token ='" + token + "'")
+                    .Where("ID(r) =" + likeRecipeRequest.rid)
+                    .AndWhere("u.token ='" + likeRecipeRequest.token + "'")
                     .Create("(u)-[:Liked{dateCreated:'" + today + "'}]->(r)")
                     .Return(r => r.As<Recipe>())
                     .ResultsAsync;
@@ -482,27 +484,27 @@ namespace TasteItApi.Controllers
 
         //CREAR RECETA
         [HttpPost("/recipe/edit")]
-        public async Task<IActionResult> PostEditRecipe(int rid, string name, string description, string country, string image, int difficulty, string ingredients, string steps, string tags)
+        public async Task<IActionResult> PostEditRecipe([FromBody] EditRecipeRequest editRecipeRequest)
         {
             try
             {
 
-                List<string> listIng = ingredients.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-                List<string> listSteps = steps.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-                List<string> listTags = tags.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                List<string> listIng = editRecipeRequest.ingredients.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                List<string> listSteps = editRecipeRequest.steps.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                List<string> listTags = editRecipeRequest.tags.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
 
 
                 //NOTA: hay que autogenerar los tags
 
                 await _client.Cypher
                     .Match("(r:Recipe)")
-                    .Where("Id(r)=" + rid)
+                    .Where("Id(r)=" + editRecipeRequest.rid)
                     .Set("r.name =$name,r.description=$description,r.country =$country,r.image=$image,r.difficulty=$difficulty,r.steps=$listSteps,r.ingredients=$listIng,r.tags=$listTags ")
-                    .WithParam("name", name)
-                    .WithParam("description", description)
-                    .WithParam("country",country)
-                    .WithParam("image", image)
-                    .WithParam("difficulty",difficulty)
+                    .WithParam("name", editRecipeRequest.name)
+                    .WithParam("description", editRecipeRequest.description)
+                    .WithParam("country", editRecipeRequest.country)
+                    .WithParam("image", editRecipeRequest.image)
+                    .WithParam("difficulty", editRecipeRequest.difficulty)
                     .WithParam("listIng", listIng)
                     .WithParam("listSteps", listSteps)
                     .WithParam("listTags",listTags)
@@ -517,8 +519,9 @@ namespace TasteItApi.Controllers
                 return BadRequest();
             }
 
-
         }
+
+
 
     }
 }
