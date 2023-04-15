@@ -51,6 +51,33 @@ namespace TasteItApi.Controllers
             return Ok(results);
         }
 
+        [HttpGet("/recipe/all/{skipper:int}")]
+        public async Task<ActionResult<Recipe>> GetAllRecipesWithSkipper(int skipper)
+        {
+            //devuelve las recetas seguido del usuario que la creo
+            var result = await _client.Cypher
+                .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                .Return((recipe, user) => new
+                {
+                    RecipeId = recipe.Id(),
+                    Recipe = recipe.As<Recipe>(),
+                    User = user.As<User>()
+                })
+                .OrderBy("recipe.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            if (results.Count == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(results);
+        }
+
         [HttpGet("/recipe/{id:int}")]
         public async Task<ActionResult<Recipe>> GetRecipeById(int id)
         {
