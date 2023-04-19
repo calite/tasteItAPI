@@ -52,7 +52,7 @@ namespace TasteItApi.Controllers
         }
 
         //DEVUELVE EL USER SEGUN EL TOKEN
-        [HttpGet("user/bytoken/{token}")]
+        [HttpGet("/user/bytoken/{token}")]
         public async Task<ActionResult<User>> GetUserByToken(string token)
         {
             var result = await _client.Cypher
@@ -80,13 +80,14 @@ namespace TasteItApi.Controllers
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
             var result = await _client.Cypher
-                .Match("(u:User)-[c:Liked]->(r:Recipe)")
+                .Match("(u:User)-[l:Liked]->(r:Recipe)-[c:Created]->(u2:User) ")
                 .Where("u.token = $token")
                 .WithParam("token", token)
                 .Return((r, u2) => new
                 {
                     RecipeId = r.Id(),
-                    Recipe = r.As<Recipe>()
+                    Recipe = r.As<Recipe>(),
+                    User = u2.As<User>()
                 })
                 .ResultsAsync;
 
