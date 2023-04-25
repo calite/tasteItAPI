@@ -309,7 +309,7 @@ namespace TasteItApi.Controllers
 
         //COMMENTARIO EN LA RECETA
         [HttpPost("/recipe/comment_recipe")]
-        public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRequest commentRequest)
+        public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest commentRequest)
         {
             string today = DateTime.Today.ToShortDateString();
 

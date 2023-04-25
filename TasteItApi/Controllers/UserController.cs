@@ -20,9 +20,9 @@ namespace TasteItApi.Controllers
         {
             _client = client;
         }
-        /*
-        [HttpPost]
-        public async Task<IActionResult> PostCreateUser([FromBody] User user)
+        
+        [HttpPost("/user/register")]
+        public async Task<IActionResult> PostRegisterUser([FromBody] User user)
         {
             await _client.Cypher.Create("(u:User $user)")
                                 .WithParam("user", user)
@@ -30,7 +30,7 @@ namespace TasteItApi.Controllers
 
             return Ok();
         }
-        */
+        
         [HttpGet("/user/byname/{username}")]
         public async Task<ActionResult<User>> GetUserByName(string username)
         {
@@ -138,7 +138,7 @@ namespace TasteItApi.Controllers
             return Ok(recipes);
         }
 
-        [HttpPost("user/edit")]
+        [HttpPost("/user/edit")]
         public async Task<IActionResult> PostChangesOnUser([FromBody] EditUserRequest editUserRequest)
         {
 
@@ -160,7 +160,7 @@ namespace TasteItApi.Controllers
             return Ok(result);
         }
         //usuario A empieza a seguir al usuario B, o lo quita
-        [HttpPost("user/follow")]
+        [HttpPost("/user/follow")]
         public async Task<IActionResult> PostFollowUser([FromBody] FollowUserRequest followUserRequest)
         {
 
@@ -228,6 +228,43 @@ namespace TasteItApi.Controllers
             }
 
             return Ok(users);
+        }
+
+        [HttpPost("/user/comment_user")]
+        public async Task<IActionResult> PostCommentUser([FromBody] CommentUserRequest request)
+        {
+            string today = DateTime.Today.ToShortDateString();
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            await _client.Cypher
+                .Match("(u1:User),(u2:User)")
+                .Where("u1.token = $senderId")
+                .AndWhere("u2.token = $receiverId")
+                .Create("(u1)-[c:Commented{comment: $comment, dateCreated: $todayDate}]->(u2)")
+                .WithParam("senderId", request.SenderId)
+                .WithParam("receiverId",request.ReceiverId)
+                .WithParam("comment",request.Comment)
+                .WithParam("todayDate",today)
+                .ExecuteWithoutResultsAsync();
+
+            return Ok();
+        }
+
+        [HttpGet("/user/recipes_created/{token}")]
+        public async Task<IActionResult> GetCountRecipes(string token)
+        {
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User)-[count:Created]-(r:Recipe)")
+                .Where("u.token = $token")
+                .WithParam("token", token)
+                .Return(count => count.Count())
+                .ResultsAsync;
+
+
+
+            return Ok(result);     
         }
 
 

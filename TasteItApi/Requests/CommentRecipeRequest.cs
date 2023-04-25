@@ -1,6 +1,6 @@
 ﻿namespace TasteItApi.Requests
 {
-    public class CommentRequest
+    public class CommentRecipeRequest
     {
         public int rid { get; set; }
         public string token { get; set; }
