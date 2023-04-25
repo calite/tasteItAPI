@@ -267,6 +267,78 @@ namespace TasteItApi.Controllers
             return Ok(result);     
         }
 
+        [HttpGet("/user/following/{token}")]
+        public async Task<IActionResult> GetCountFollowing(string token)
+        {
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User)-[count:Following]->(u2:User)")
+                .Where("u.token = $token")
+                .WithParam("token", token)
+                .Return(u2 => u2.Count())
+                .ResultsAsync;
+
+
+
+            return Ok(result);
+        }
+
+        [HttpGet("/user/followers/{token}")]
+        public async Task<IActionResult> GetCountFollowers(string token)
+        {
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User)<-[count:Following]-(u2:User)")
+                .Where("u.token = $token")
+                .WithParam("token", token)
+                .Return(u2 => u2.Count())
+                .ResultsAsync;
+
+
+
+            return Ok(result);
+        }
+
+        [HttpGet("/user/recipes_liked/{token}")]
+        public async Task<IActionResult> GetCountLiked(string token)
+        {
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(u:User)-[count:Liked]->(r:Recipe)")
+                .Where("u.token = $token")
+                .WithParam("token", token)
+                .Return(r => r.Count())
+                .ResultsAsync;
+
+
+
+            return Ok(result);
+        }
+
+        [HttpGet("/user/comments/{token}")]
+        public async Task<IActionResult> GetCommentsOnUser(string token)
+        {
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(user:User)-[comment:Commented]->(u2:User)")
+                .Where("u2.token = $token")
+                .WithParam("token", token)
+                .Return((user,comment) => new
+                {
+                    user = user.As<User>(),
+                    comment = comment.As<CommentOnUser>()
+                })
+                .ResultsAsync;
+
+
+
+            return Ok(result);
+        }
+
 
     }
 }
