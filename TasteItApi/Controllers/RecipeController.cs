@@ -491,7 +491,7 @@ namespace TasteItApi.Controllers
                     RecipeId = recipe.Id(),
                     Recipe = recipe.As<Recipe>(),
                     User = u.As<User>(),
-                    c = c.As<User>()
+                    c = c.As<Comment>()
 
                 })
                 .ResultsAsync;
