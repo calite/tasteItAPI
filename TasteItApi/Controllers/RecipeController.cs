@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Neo4j.Driver;
 using Neo4jClient;
 using Neo4jClient.Cypher;
@@ -12,6 +13,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace TasteItApi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("controller")]
     public class RecipeController : Controller
