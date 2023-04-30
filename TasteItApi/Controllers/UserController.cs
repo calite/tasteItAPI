@@ -6,9 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TasteItApi.Requests;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TasteItApi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UserController : ControllerBase
@@ -31,24 +33,27 @@ namespace TasteItApi.Controllers
             return Ok();
         }
         
-        [HttpGet("/user/byname/{username}")]
-        public async Task<ActionResult<User>> GetUserByName(string username)
+        [HttpGet("/user/byname/{username}/{skipper:int}")]
+        public async Task<ActionResult<User>> GetUserByName(string username, int skipper)
         {
             var result = await _client.Cypher
                         .Match("(u:User)")
-                        .Where((User u) => u.username == username)
+                        .Where((User u) => u.username.Contains(username))
                         .Return(u => u.As<User>())
+                        .OrderBy("u.username desc")
+                        .Skip(skipper)
+                        .Limit(10)
                         .ResultsAsync;
 
 
-            var user = result.FirstOrDefault();
+            var users = result.ToList();
 
-            if (user == null)
-            {
-                return NotFound();
-            }
+            //if (user == null)
+            //{
+            //    return NotFound();
+            //}
 
-            return Ok(user);
+            return Ok(users);
         }
 
         //DEVUELVE EL USER SEGUN EL TOKEN
@@ -64,17 +69,12 @@ namespace TasteItApi.Controllers
 
             var user = result.FirstOrDefault();
 
-            if (user == null)
-            {
-                return NotFound();
-            }
-
             return Ok(user);
         }
 
         //DEVUELVE LAS RECETAS  QUE A UN USUARIO LE GUSTAN
-        [HttpGet("/user/liked_recipes/{token}")]
-        public async Task<IActionResult> GetRecipesLiked(string token)
+        [HttpGet("/user/liked_recipes/{token}/{skipper}")]
+        public async Task<IActionResult> GetRecipesLiked(string token, int skipper)
         {
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
@@ -89,31 +89,22 @@ namespace TasteItApi.Controllers
                     Recipe = r.As<Recipe>(),
                     User = u2.As<User>()
                 })
+                .OrderBy("r.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
                 .ResultsAsync;
 
             var recipes = result.ToList();
-
-            if (recipes.Count == 0)
-            {
-                return NotFound();
-            }
 
             return Ok(recipes);
         }
 
         //devuelve las RECETAS DE TUS SEGUIDORES
-        [HttpGet("/user/followers_recipes/{token}")]
-        public async Task<IActionResult> GetRecipesFollowed(string token)
+        [HttpGet("/user/followers_recipes/{token}/{skipper}")]
+        public async Task<IActionResult> GetRecipesFollowed(string token, int skipper)
         {
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
-
-            /*
-                match (u1:User)-[f:Following]->(u2:User)
-                where u1.token = "ZdoWamcZHHT26CG9IM7tKnze3ul2"
-                match (r:Recipe)-[c:Created]->(u2)
-                return u1,f,r,c,u2
-            */
 
             var result = await _client.Cypher
                 .Match("(u1:User)-[f:Following]->(u2:User)")
@@ -126,14 +117,12 @@ namespace TasteItApi.Controllers
                     Recipe = r.As<Recipe>(),
                     User = u2.As<User>()
                 })
+                .OrderBy("r.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
                 .ResultsAsync;
 
             var recipes = result.ToList();
-
-            if (recipes.Count == 0)
-            {
-                return NotFound();
-            }
 
             return Ok(recipes);
         }
@@ -262,8 +251,6 @@ namespace TasteItApi.Controllers
                 .Return(count => count.Count())
                 .ResultsAsync;
 
-
-
             return Ok(result);     
         }
 
@@ -278,8 +265,6 @@ namespace TasteItApi.Controllers
                 .WithParam("token", token)
                 .Return(u2 => u2.Count())
                 .ResultsAsync;
-
-
 
             return Ok(result);
         }
@@ -296,8 +281,6 @@ namespace TasteItApi.Controllers
                 .Return(u2 => u2.Count())
                 .ResultsAsync;
 
-
-
             return Ok(result);
         }
 
@@ -312,8 +295,6 @@ namespace TasteItApi.Controllers
                 .WithParam("token", token)
                 .Return(r => r.Count())
                 .ResultsAsync;
-
-
 
             return Ok(result);
         }
@@ -333,8 +314,6 @@ namespace TasteItApi.Controllers
                     comment = comment.As<CommentOnUser>()
                 })
                 .ResultsAsync;
-
-
 
             return Ok(result);
         }

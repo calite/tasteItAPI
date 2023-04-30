@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 using System.Net.WebSockets;
+using TasteItApi.authentication;
 using TasteItApi.Models;
 using TasteItApi.Requests;
 using static System.Net.Mime.MediaTypeNames;
@@ -45,13 +46,14 @@ namespace TasteItApi.Controllers
 
             var results = result.ToList();
 
-            if (results.Count == 0)
-            {
-                return NotFound();
-            }
+            //if (results.Count == 0)
+            //{
+            //    return NotFound();
+            //}
 
             return Ok(results);
         }
+
 
         [HttpGet("/recipe/all/{skipper:int}")]
         public async Task<ActionResult<Recipe>> GetAllRecipesWithSkipper(int skipper)
@@ -72,11 +74,6 @@ namespace TasteItApi.Controllers
 
             var results = result.ToList();
 
-            if (results.Count == 0)
-            {
-                return NotFound();
-            }
-
             return Ok(results);
         }
 
@@ -95,14 +92,9 @@ namespace TasteItApi.Controllers
                 })
                 .ResultsAsync;
 
-            var results = result.ToList();
+            //var results = result.ToList();
 
-            if (results.Count == 0)
-            {
-                return NotFound();
-            }
-
-            return Ok(results);
+            return Ok(result);
         }
 
         [HttpGet("/recipe/random/{limit}")]
@@ -134,11 +126,6 @@ namespace TasteItApi.Controllers
 
             var results = result.ToList();
 
-            if (results.Count == 0)
-            {
-                return NotFound();
-            }
-
             return Ok(results);
         }
 
@@ -159,11 +146,6 @@ namespace TasteItApi.Controllers
                             .ResultsAsync;
 
             var recipe = result.ToList();
-
-            if (recipe.Count == 0)
-            {
-                return NotFound();
-            }
 
             return Ok(recipe);
         }
@@ -186,38 +168,31 @@ namespace TasteItApi.Controllers
 
             var recipe = result.ToList();
 
-            if (recipe.Count == 0)
-            {
-                return NotFound();
-            }
-
             return Ok(recipe);
         }
 
-        [HttpGet("/recipe/byuser/{token}")]
-        public async Task<ActionResult<User>> GetRecipesByUser(string token)
+        [HttpGet("/recipe/byuser/{token}/{skipper}")]
+        public async Task<ActionResult<User>> GetRecipesByUser(string token, int skipper)
         {
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
             //MATCH (n1:User)-[:Created]-(n2:Recipe) WHERE n1.token = '" + uid + "' RETURN n1.username, n2;
             var result = await _client.Cypher
-                            .Match("(user:User)-[:Created]-(recipe:Recipe)")
-                            .Where((User user) => user.token == token)
-                             .Return((recipe, user) => new
-                             {
-                                 RecipeId = recipe.Id(),
-                                 Recipe = recipe.As<Recipe>(),
-                                 User = user.As<User>()
-                             })
-                            .ResultsAsync;
+                .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                .Where((User user) => user.token == token)
+                    .Return((recipe, user) => new
+                    {
+                        RecipeId = recipe.Id(),
+                        Recipe = recipe.As<Recipe>(),
+                        User = user.As<User>()
+                    })
+                    .OrderBy("recipe.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
+                .ResultsAsync;
 
             var creators = result.ToList();
-
-            if (creators.Count == 0)
-            {
-                return NotFound();
-            }
 
             return Ok(creators);
         }
@@ -240,11 +215,6 @@ namespace TasteItApi.Controllers
                             .ResultsAsync;
 
             var recipes = result.ToList();
-
-            if (recipes.Count == 0)
-            {
-                return NotFound();
-            }
 
             Dictionary<Recipe, User> listRecipesFiltered = new Dictionary<Recipe, User>();
 
@@ -336,11 +306,6 @@ namespace TasteItApi.Controllers
 
             var recipe = result.ToList();
 
-            if (recipe.Count == 0)
-            {
-                return NotFound();
-            }
-
             return Ok(recipe);
         }
 
@@ -369,11 +334,6 @@ namespace TasteItApi.Controllers
 
             var recipes = result.ToList();
 
-            if (recipes.Count == 0)
-            {
-                return NotFound();
-            }
-
             return Ok(recipes);
         }
 
@@ -394,11 +354,6 @@ namespace TasteItApi.Controllers
                 .ResultsAsync;
 
             var recipe = result.ToList();
-
-            if (recipe.Count == 0)
-            {
-                return NotFound();
-            }
 
             return Ok(recipe);
         }
@@ -469,11 +424,6 @@ namespace TasteItApi.Controllers
 
             var users = result.ToList();
 
-            if (users.Count == 0)
-            {
-                return NotFound();
-            }
-
             return Ok(users);
         }
 
@@ -499,11 +449,6 @@ namespace TasteItApi.Controllers
                 .ResultsAsync;
 
             var comments = result.ToList();
-
-            if (comments.Count == 0)
-            {
-                return NotFound();
-            }
 
             return Ok(comments);
         }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "EYrxPusxE/BcBQFlsP4yN+mchBLA5JVYIR1fu9YtaPgqXLyNi7NRXW6zieMCBepBR8H95LcJ3D7BItx/P4rneg==",
+  "dgSpecHash": "UsMsswegi0rWx4I7CZhQH4ildwSdYQreztc4ZzlduCI/4GNqKPOqh47CdCoZ2OAubC2uOv4WDzYNdpZlqGxObw==",
   "success": true,
   "projectFilePath": "D:\\proyectos\\git\\tasteItAPI\\TasteItApi\\TasteItApi.csproj",
   "expectedPackageFiles": [
@@ -8,9 +8,9 @@
     "C:\\Users\\danie\\.nuget\\packages\\firebaseauthentication.net\\4.0.2\\firebaseauthentication.net.4.0.2.nupkg.sha512",
     "C:\\Users\\danie\\.nuget\\packages\\google.api.gax\\3.2.0\\google.api.gax.3.2.0.nupkg.sha512",
     "C:\\Users\\danie\\.nuget\\packages\\google.api.gax.rest\\3.2.0\\google.api.gax.rest.3.2.0.nupkg.sha512",
-    "C:\\Users\\danie\\.nuget\\packages\\google.apis\\1.49.0\\google.apis.1.49.0.nupkg.sha512",
-    "C:\\Users\\danie\\.nuget\\packages\\google.apis.auth\\1.49.0\\google.apis.auth.1.49.0.nupkg.sha512",
-    "C:\\Users\\danie\\.nuget\\packages\\google.apis.core\\1.49.0\\google.apis.core.1.49.0.nupkg.sha512",
+    "C:\\Users\\danie\\.nuget\\packages\\google.apis\\1.60.0\\google.apis.1.60.0.nupkg.sha512",
+    "C:\\Users\\danie\\.nuget\\packages\\google.apis.auth\\1.60.0\\google.apis.auth.1.60.0.nupkg.sha512",
+    "C:\\Users\\danie\\.nuget\\packages\\google.apis.core\\1.60.0\\google.apis.core.1.60.0.nupkg.sha512",
     "C:\\Users\\danie\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\6.0.16\\microsoft.aspnetcore.authentication.jwtbearer.6.0.16.nupkg.sha512",
     "C:\\Users\\danie\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\5.0.0\\microsoft.bcl.asyncinterfaces.5.0.0.nupkg.sha512",
     "C:\\Users\\danie\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
