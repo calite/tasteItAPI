@@ -32,8 +32,8 @@ namespace TasteItApi
 
             //jwt token con firebase
             
-            services.AddSingleton(FirebaseApp.Create());
-            services.AddFirebaseAuthentication();
+            //services.AddSingleton(FirebaseApp.Create());
+            //services.AddFirebaseAuthentication();
             
             //NEO
             var client = new BoltGraphClient(new Uri("neo4j+s://dc95b24b.databases.neo4j.io"), "neo4j", "sBQ6Fj2oXaFltjizpmTDhyEO9GDiqGM1rG-zelf17kg");
