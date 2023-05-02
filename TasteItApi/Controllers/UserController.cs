@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TasteItApi.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UserController : ControllerBase

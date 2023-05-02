@@ -14,7 +14,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace TasteItApi.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [ApiController]
     [Route("controller")]
     public class RecipeController : Controller
