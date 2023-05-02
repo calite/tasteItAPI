@@ -5,6 +5,7 @@ using Neo4jClient;
 using Neo4jClient.Cypher;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net.WebSockets;
 using TasteItApi.authentication;
@@ -14,7 +15,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace TasteItApi.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [ApiController]
     [Route("controller")]
     public class RecipeController : Controller
@@ -101,14 +102,6 @@ namespace TasteItApi.Controllers
         public async Task<ActionResult<Recipe>> GetRandomRecipesWithLimit(int limit)
         {
 
-            /*
-                match (u:User)-[c:Created]-(r:Recipe)
-                with u, rand() as rand
-                order by rand limit 5
-                match (u:User)-[c:Created]-(r:Recipe)
-                return r ,u , c , rand() as rand 
-            */
-
             //devuelve un numero aleatorio de recetas seguido del usuario que la creo
             var result = await _client.Cypher
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
@@ -129,13 +122,15 @@ namespace TasteItApi.Controllers
             return Ok(results);
         }
 
-        [HttpGet("/recipe/byname/{name}")]
-        public async Task<ActionResult<Recipe>> GetRecipeByName(string name)
+        [HttpGet("/recipe/byname/{name}/{skipper}")]
+        public async Task<ActionResult<Recipe>> GetRecipeByName(string name, int skipper)
         {
             //devuelve recetas filtrando por nombre seguido del usuario que la creo
             var result = await _client.Cypher
                             .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                            .Where((Recipe recipe) => recipe.name.Contains(name))
+                            //.Where((Recipe recipe) => recipe.name.Contains(name))
+                            .Where("toLower(recipe.name) CONTAINS toLower($name)")
+                            .WithParam("name", name)
                             .Return((recipe, user) => new
                             {
                                 RecipeId = recipe.Id(),
@@ -143,6 +138,9 @@ namespace TasteItApi.Controllers
                                 User = user.As<User>()
 
                             })
+                            .OrderBy("recipe.dateCreated desc")
+                            .Skip(skipper)
+                            .Limit(10)
                             .ResultsAsync;
 
             var recipe = result.ToList();
@@ -150,13 +148,15 @@ namespace TasteItApi.Controllers
             return Ok(recipe);
         }
 
-        [HttpGet("/recipe/bycountry/{country}")]
-        public async Task<ActionResult<Recipe>> GetRecipeByCountry(string country)
+        [HttpGet("/recipe/bycountry/{country}/{skipper}")]
+        public async Task<ActionResult<Recipe>> GetRecipeByCountry(string country, int skipper)
         {
             //filtramos recetas por ciudad seguido del usuario que la creo
             var result = await _client.Cypher
                             .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                            .Where((Recipe recipe) => recipe.country.Contains(country))
+                            //.Where((Recipe recipe) => recipe.country.Contains(country))
+                            .Where("toLower(recipe.country) CONTAINS toLower($country)")
+                            .WithParam("country", country)
                             .Return((recipe, user) => new
                             {
                                 RecipeId = recipe.Id(),
@@ -164,7 +164,10 @@ namespace TasteItApi.Controllers
                                 User = user.As<User>()
 
                             })
-                            .ResultsAsync;
+                           .OrderBy("recipe.dateCreated desc")
+                           .Skip(skipper)
+                           .Limit(10)
+                           .ResultsAsync;
 
             var recipe = result.ToList();
 
@@ -197,9 +200,9 @@ namespace TasteItApi.Controllers
             return Ok(creators);
         }
 
-        //ARREGLAR
-        [HttpGet("/recipe/byingredients/{ingredients}")]
-        public async Task<ActionResult<List<Recipe>>> GetRecipeByIngredients(string ingredients)
+        //ARREGLAR el skipper
+        [HttpGet("/recipe/byingredients/{ingredients}/{skipper}")]
+        public async Task<ActionResult<List<Recipe>>> GetRecipeByIngredients(string ingredients, int skipper)
         {
 
             List<string> listIng = ingredients.Replace(" ", "").Split(",").ToList();
@@ -212,20 +215,70 @@ namespace TasteItApi.Controllers
                                 Recipe = recipe.As<Recipe>(),
                                 User = user.As<User>()
                             })
+                            .OrderBy("recipe.dateCreated desc")
                             .ResultsAsync;
 
             var recipes = result.ToList();
 
-            Dictionary<Recipe, User> listRecipesFiltered = new Dictionary<Recipe, User>();
+            //Dictionary<Recipe, User> listRecipesFiltered = new Dictionary<Recipe, User>();
+            List<RecipeId_Recipe_User> listRecipesFiltered = new List<RecipeId_Recipe_User>();
 
             for (int i = 0; i < recipes.Count; i++)
             {
                 //miramos si la lista de los ingredientes contiene alguno de los elementos de los introducidos por el usuario
-                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => y == x));
+                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => y.ToLower() == x.ToLower()));
 
                 if (hasMatch)
                 {
-                    listRecipesFiltered.Add(recipes[i].Recipe, recipes[i].User);
+                    listRecipesFiltered.Add(new RecipeId_Recipe_User
+                    {
+                        RecipeId = recipes[i].RecipeId,
+                        Recipe = recipes[i].Recipe.As<Recipe>(),
+                        User = recipes[i].User.As<User>()
+                    });
+                }
+
+            }
+
+            return Ok(listRecipesFiltered.ToList());
+        }
+
+        //ARREGLAR el skipper
+        [HttpGet("/recipe/bytags/{tags}/{skipper}")]
+        public async Task<ActionResult<List<Recipe>>> GetRecipeByTags(string tags, int skipper)
+        {
+
+            List<string> listTags = tags.Replace(" ", "").Split(",").ToList();
+
+            var result = await _client.Cypher
+                            .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                            .Return((recipe, user) => new
+                            {
+                                RecipeId = recipe.Id(),
+                                Recipe = recipe.As<Recipe>(),
+                                User = user.As<User>()
+                            })
+                            .OrderBy("recipe.dateCreated desc")
+                            .ResultsAsync;
+
+            var recipes = result.ToList();
+
+            //Dictionary<Recipe, User> listRecipesFiltered = new Dictionary<Recipe, User>();
+            List<RecipeId_Recipe_User> listRecipesFiltered = new List<RecipeId_Recipe_User>();
+
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                //miramos si la lista de los ingredientes contiene alguno de los elementos de los introducidos por el usuario
+                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listTags.Any(y => y.ToLower() == x.ToLower()));
+
+                if (hasMatch)
+                {
+                    listRecipesFiltered.Add(new RecipeId_Recipe_User
+                    {
+                        RecipeId = recipes[i].RecipeId,
+                        Recipe = recipes[i].Recipe.As<Recipe>(),
+                        User = recipes[i].User.As<User>()
+                    });
                 }
 
             }
@@ -359,7 +412,7 @@ namespace TasteItApi.Controllers
         }
 
         //DA O QUITA LIKE A UNA RECETA
-        [HttpPost("/recipe/like/{rid}_{token}")]
+        [HttpPost("/recipe/like")]
         public async Task<IActionResult> PostLikeOnRecipe(LikeRecipeRequest likeRecipeRequest)
         {
             string today = DateTime.Today.ToShortDateString();

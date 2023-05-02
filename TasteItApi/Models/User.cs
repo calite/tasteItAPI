@@ -6,6 +6,6 @@
         public string username { get; set; }
         public string imgProfile { get; set; }
         public string biography { get; set; }
-        //List<string> comments { get; set; }
+
     }
 }

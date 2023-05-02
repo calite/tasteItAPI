@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TasteItApi.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UserController : ControllerBase
@@ -38,7 +38,8 @@ namespace TasteItApi.Controllers
         {
             var result = await _client.Cypher
                         .Match("(u:User)")
-                        .Where((User u) => u.username.Contains(username))
+                        .Where("toLower(u.username) CONTAINS toLower($username)")
+                        .WithParam("username", username)
                         .Return(u => u.As<User>())
                         .OrderBy("u.username desc")
                         .Skip(skipper)
