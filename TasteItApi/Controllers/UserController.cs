@@ -149,6 +149,34 @@ namespace TasteItApi.Controllers
 
             return Ok(result);
         }
+
+        //CONFIRMAR SI UN USUARIO SIGUE A OTRO USUARIO
+        [HttpGet("/user/following/{sender_token}_{receiver_token}")]
+        public async Task<IActionResult> GetFollowingUser(string sender_token, string receiver_token)
+        {
+
+            //tokenManolo = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+            //tokenPepito = "ZdoWamcZHHT26CG9IM7tKnze3ul2";
+
+            var result = await _client.Cypher
+                .Match("(sender:User)-[follow:Following]->(receiver:User)")
+                .Where("sender.token = $sender_token")
+                .AndWhere("receiver.token = $receiver_token")
+                .WithParam("sender_token", sender_token)
+                .WithParam("receiver_token", receiver_token)
+                .Return((sender, receiver) => new 
+                {
+                    sender = sender.As<User>(),
+                    receiver = receiver.As<User>()
+                })
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            return Ok(results);
+        }
+
+
         //usuario A empieza a seguir al usuario B, o lo quita
         [HttpPost("/user/follow")]
         public async Task<IActionResult> PostFollowUser([FromBody] FollowUserRequest followUserRequest)
@@ -165,10 +193,9 @@ namespace TasteItApi.Controllers
                .AndWhere("receiver.token = $receiverToken")
                .WithParam("senderToken", followUserRequest.senderToken)
                .WithParam("receiverToken", followUserRequest.receiverToken)
-               .Return((sender, follow, receiver) => new
+               .Return((sender, receiver) => new
                {
                    sender = sender.As<Recipe>(),
-                   follow = follow.As<Follow>(),
                    receiver = receiver.As<User>()
 
                })
@@ -185,10 +212,9 @@ namespace TasteItApi.Controllers
                .Delete("follow")
                .WithParam("senderToken", followUserRequest.senderToken)
                .WithParam("receiverToken", followUserRequest.receiverToken)
-               .Return((sender, follow, receiver) => new
+               .Return((sender, receiver) => new
                {
                    sender = sender.As<Recipe>(),
-                   follow = follow.As<Follow>(),
                    receiver = receiver.As<User>()
                })
                .ResultsAsync;
@@ -205,10 +231,9 @@ namespace TasteItApi.Controllers
                .WithParam("senderToken", followUserRequest.senderToken)
                .WithParam("receiverToken", followUserRequest.receiverToken)
                .WithParam("dateCreated", today)
-               .Return((sender, follow, receiver) => new
+               .Return((sender, receiver) => new
                {
                    sender = sender.As<Recipe>(),
-                   follow = follow.As<Follow>(),
                    receiver = receiver.As<User>()
 
                })
