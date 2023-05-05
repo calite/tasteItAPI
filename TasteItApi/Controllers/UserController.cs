@@ -222,10 +222,7 @@ namespace TasteItApi.Controllers
                 .Match("(sender:User)-[follow:Following]->(receiver:User)")
                 .Where("sender.token = $sender_token")
                 .WithParam("sender_token", sender_token)
-                .Return((receiver) => new
-                {
-                    receiver = receiver.As<User>()
-                })
+                .Return(receiver => receiver.As<User>())
                 .OrderBy("follow.dateCreated desc")
                 .Skip(skipper)
                 .Limit(10)
@@ -247,10 +244,7 @@ namespace TasteItApi.Controllers
                 .Match("(sender:User)<-[follow:Following]-(receiver:User)")
                 .Where("sender.token = $sender_token")
                 .WithParam("sender_token", sender_token)
-                .Return((receiver) => new
-                {
-                    receiver = receiver.As<User>()
-                })
+                .Return(receiver => receiver.As<User>())
                 .OrderBy("follow.dateCreated desc")
                 .Skip(skipper)
                 .Limit(10)

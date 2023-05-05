@@ -408,7 +408,17 @@ namespace TasteItApi.Controllers
 
             var recipe = result.ToList();
 
-            return Ok(recipe);
+            bool isLiked;
+
+            if(recipe.Count == 0)
+            {
+                isLiked = false;
+            }else
+            {
+                isLiked = true;
+            }
+
+            return Ok(isLiked);
         }
 
         //DA O QUITA LIKE A UNA RECETA
