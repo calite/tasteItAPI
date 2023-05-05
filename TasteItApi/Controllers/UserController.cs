@@ -149,7 +149,7 @@ namespace TasteItApi.Controllers
 
             return Ok(result);
         }
-
+        /*
         //CONFIRMAR SI UN USUARIO SIGUE A OTRO USUARIO
         [HttpGet("/user/following/{sender_token}_{receiver_token}")]
         public async Task<IActionResult> GetFollowingUser(string sender_token, string receiver_token)
@@ -164,9 +164,10 @@ namespace TasteItApi.Controllers
                 .AndWhere("receiver.token = $receiver_token")
                 .WithParam("sender_token", sender_token)
                 .WithParam("receiver_token", receiver_token)
-                .Return((sender, receiver) => new 
+                .Return((sender, follow, receiver) => new 
                 {
                     sender = sender.As<User>(),
+                    follow = follow.As<Follow>(),
                     receiver = receiver.As<User>()
                 })
                 .ResultsAsync;
@@ -175,7 +176,90 @@ namespace TasteItApi.Controllers
 
             return Ok(results);
         }
+        */
+        //CONFIRMAR SI UN USUARIO SIGUE A OTRO USUARIO
+        [HttpGet("/user/following/{sender_token}_{receiver_token}")]
+        public async Task<IActionResult> GetIsFollowingUser(string sender_token, string receiver_token)
+        {
 
+            //tokenManolo = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+            //tokenPepito = "ZdoWamcZHHT26CG9IM7tKnze3ul2";
+
+            var result = await _client.Cypher
+                .Match("(sender:User)-[follow:Following]->(receiver:User)")
+                .Where("sender.token = $sender_token")
+                .AndWhere("receiver.token = $receiver_token")
+                .WithParam("sender_token", sender_token)
+                .WithParam("receiver_token", receiver_token)
+                .Return((follow) => new
+                {
+                    follow = follow.As<Follow>()
+                })
+                .ResultsAsync;
+
+            bool isFollowing;
+
+            if (result.ToList().Count == 0)
+            {
+                isFollowing = false;
+            }
+            else
+            {
+                isFollowing = true;
+            }
+
+            return Ok(isFollowing);
+        }
+
+        //Devolver a quien sigue un usuario
+        [HttpGet("/user/following_user/{sender_token}/{skipper}")]
+        public async Task<IActionResult> GetFollowingUser(string sender_token, int skipper)
+        {
+
+            //tokenManolo = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(sender:User)-[follow:Following]->(receiver:User)")
+                .Where("sender.token = $sender_token")
+                .WithParam("sender_token", sender_token)
+                .Return((receiver) => new
+                {
+                    receiver = receiver.As<User>()
+                })
+                .OrderBy("follow.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            return Ok(results);
+        }
+
+        //Devolver a los seguidores de un usuario
+        [HttpGet("/user/followers_user/{sender_token}/{skipper}")]
+        public async Task<IActionResult> GetFollowersUser(string sender_token, int skipper)
+        {
+
+            //tokenManolo = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(sender:User)<-[follow:Following]-(receiver:User)")
+                .Where("sender.token = $sender_token")
+                .WithParam("sender_token", sender_token)
+                .Return((receiver) => new
+                {
+                    receiver = receiver.As<User>()
+                })
+                .OrderBy("follow.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            return Ok(results);
+        }
 
         //usuario A empieza a seguir al usuario B, o lo quita
         [HttpPost("/user/follow")]
@@ -325,8 +409,8 @@ namespace TasteItApi.Controllers
             return Ok(result);
         }
 
-        [HttpGet("/user/comments/{token}")]
-        public async Task<IActionResult> GetCommentsOnUser(string token)
+        [HttpGet("/user/comments/{token}/{skipper}")]
+        public async Task<IActionResult> GetCommentsOnUser(string token, int skipper)
         {
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
@@ -334,12 +418,17 @@ namespace TasteItApi.Controllers
                 .Match("(user:User)-[comment:Commented]->(u2:User)")
                 .Where("u2.token = $token")
                 .WithParam("token", token)
-                .Return((user,comment) => new
+                .Return((user, comment) => new
                 {
                     user = user.As<User>(),
                     comment = comment.As<CommentOnUser>()
                 })
+                .OrderBy("comment.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
                 .ResultsAsync;
+
+            var results = result.ToList();
 
             return Ok(result);
         }

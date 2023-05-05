@@ -481,8 +481,8 @@ namespace TasteItApi.Controllers
         }
 
         //DEVUELVE LOS COMENTARIOS DE UNA RECETA
-        [HttpGet("/recipe/comments/{rid}")]
-        public async Task<IActionResult> GetCommentsOnRecipe(int rid)
+        [HttpGet("/recipe/comments/{rid}/{skipper}")]
+        public async Task<IActionResult> GetCommentsOnRecipe(int rid, int skipper)
         {
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
@@ -499,6 +499,9 @@ namespace TasteItApi.Controllers
                     c = c.As<Comment>()
 
                 })
+                .OrderBy("c.dateCreated desc")
+                .Skip(skipper)
+                .Limit(10)
                 .ResultsAsync;
 
             var comments = result.ToList();
