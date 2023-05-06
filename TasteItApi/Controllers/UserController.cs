@@ -22,7 +22,8 @@ namespace TasteItApi.Controllers
         {
             _client = client;
         }
-        
+
+        [AllowAnonymous]
         [HttpPost("/user/register")]
         public async Task<IActionResult> PostRegisterUser([FromBody] User user)
         {
