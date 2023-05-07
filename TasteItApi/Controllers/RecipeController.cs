@@ -6,8 +6,10 @@ using Neo4jClient.Cypher;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics.Metrics;
+using System.Globalization;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Text;
 using TasteItApi.authentication;
 using TasteItApi.Models;
 using TasteItApi.Requests;
@@ -286,6 +288,16 @@ namespace TasteItApi.Controllers
             return Ok(listRecipesFiltered.ToList());
         }
 
+        private static string Normalize(string word)
+        {
+            return word.ToLowerInvariant().Normalize(NormalizationForm.FormD)
+                       .Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) !=
+                                     UnicodeCategory.NonSpacingMark)
+                       .Aggregate(new StringBuilder(), (sb, ch) => sb.Append(ch))
+                       .ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        [AllowAnonymous]
         //CREAR RECETA
         [HttpPost("/recipe/create")]
         //public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, string image, int difficulty, string ingredients, string steps, string tags)
@@ -300,11 +312,42 @@ namespace TasteItApi.Controllers
 
                 string today = DateTime.Today.ToShortDateString();
 
-                List<string> listIng = recipeRequest.ingredients.Split(",").ToList();
-                List<string> listSteps = recipeRequest.steps.Split(",").ToList();
-                List<string> listTags = recipeRequest.tags.Split(",").ToList();
+                // Diccionario de palabras más usadas en las recetas
+                string[] commonWords = new string[] { 
+                    "sal", "azucar", "aceite", "cebolla", 
+                    "ajo", "tomate", "pollo", "carne", "pescado", 
+                    "arroz", "pasta", "huevo", "huevos", "leche", "harina", 
+                    "pan", "queso", "mayonesa", "mostaza", "vinagre", 
+                    "limon", "naranja", "manzana", "platano", "fresa", 
+                    "chocolate", "vainilla", "canela", "nuez", "mantequilla", 
+                    "crema", "almendra", "cacahuete", "mermelada", "miel", 
+                    "jengibre", "curry", "pimienta", "salvia", "romero", 
+                    "oregano", "laurel", "tomillo", "perejil", "cilantro", 
+                    "menta", "albahaca", "salsa", "sopa", "ensalada", 
+                    "guiso", "horneado", "frito", "asado", "cocido", "microondas" };
+                
+                List<string> listIng = recipeRequest.ingredients.ToList();
+                List<string> listSteps = recipeRequest.steps.ToList();
+                List<string> listTags = new List<string>();
 
-                //NOTA: hay que autogenerar los tags
+                // Obtener las palabras clave del nombre, descripción, steps e ingredientes
+                string[] keywords = recipeRequest.name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Concat(recipeRequest.description.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    .Concat(recipeRequest.ingredients.SelectMany(i => i.Split(' ', StringSplitOptions.RemoveEmptyEntries)))
+                    .Concat(recipeRequest.steps.SelectMany(s => s.Split(' ', StringSplitOptions.RemoveEmptyEntries)))
+                    .Select(w => Normalize(w.ToLower()))
+                    //.Where(w => !commonWords.Contains(w))
+                    .Distinct()
+                    .ToArray();
+
+                // Generar los tags a partir de las coincidencias con el diccionario de palabras comunes
+                foreach (string word in keywords)
+                {
+                    if (commonWords.Contains(Normalize(word)))
+                    {
+                        listTags.Add(word);
+                    }
+                }
 
                 await _client.Cypher
                     .Match("(user: User)")
@@ -320,7 +363,7 @@ namespace TasteItApi.Controllers
                     .WithParam("ingredients", listIng)
                     .WithParam("tags", listTags)
                     .ExecuteWithoutResultsAsync();
-
+                
                 return Ok();
 
                 // No se devuelve nada explícitamente, ya que se usa "async Task" como tipo de retorno

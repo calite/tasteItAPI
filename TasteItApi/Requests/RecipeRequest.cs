@@ -8,9 +8,8 @@
         public string country { get; set; }
         public string image { get; set; }
         public int difficulty { get; set; }
-        public string ingredients { get; set; }
-        public string steps { get; set; }
-        public string tags { get; set; }
+        public string[] ingredients { get; set; }
+        public string[] steps { get; set; }
 
     }
 }
