@@ -26,10 +26,25 @@ namespace TasteItApi.Controllers
 
         //DOC: https://github.com/DotNet4Neo4j/Neo4jClient/wiki
 
+        // Diccionario de palabras más usadas en las recetas
+        string[] commonWords = new string[] {
+                    "sal", "azucar", "aceite", "cebolla",
+                    "ajo", "tomate", "pollo", "carne", "pescado",
+                    "arroz", "pasta", "huevo", "huevos", "leche", "harina",
+                    "pan", "queso", "mayonesa", "mostaza", "vinagre",
+                    "limon", "naranja", "manzana", "platano", "fresa",
+                    "chocolate", "vainilla", "canela", "nuez", "mantequilla",
+                    "crema", "almendra", "cacahuete", "mermelada", "miel",
+                    "jengibre", "curry", "pimienta", "salvia", "romero",
+                    "oregano", "laurel", "tomillo", "perejil", "cilantro",
+                    "menta", "albahaca", "salsa", "sopa", "ensalada",
+                    "guiso", "horneado", "frito", "asado", "cocido", "microondas" };
 
-        public RecipeController(IGraphClient client)
+
+    public RecipeController(IGraphClient client)
         {
             _client = client;
+
         }
 
         [HttpGet("/recipe/all")]
@@ -181,18 +196,18 @@ namespace TasteItApi.Controllers
         {
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
-
             //MATCH (n1:User)-[:Created]-(n2:Recipe) WHERE n1.token = '" + uid + "' RETURN n1.username, n2;
+
             var result = await _client.Cypher
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
                 .Where((User user) => user.token == token)
-                    .Return((recipe, user) => new
-                    {
-                        RecipeId = recipe.Id(),
-                        Recipe = recipe.As<Recipe>(),
-                        User = user.As<User>()
-                    })
-                    .OrderBy("recipe.dateCreated desc")
+                .Return((recipe, user) => new
+                {
+                    RecipeId = recipe.Id(),
+                    Recipe = recipe.As<Recipe>(),
+                    User = user.As<User>()
+                })
+                .OrderBy("recipe.dateCreated desc")
                 .Skip(skipper)
                 .Limit(10)
                 .ResultsAsync;
@@ -312,19 +327,6 @@ namespace TasteItApi.Controllers
 
                 string today = DateTime.Today.ToShortDateString();
 
-                // Diccionario de palabras más usadas en las recetas
-                string[] commonWords = new string[] { 
-                    "sal", "azucar", "aceite", "cebolla", 
-                    "ajo", "tomate", "pollo", "carne", "pescado", 
-                    "arroz", "pasta", "huevo", "huevos", "leche", "harina", 
-                    "pan", "queso", "mayonesa", "mostaza", "vinagre", 
-                    "limon", "naranja", "manzana", "platano", "fresa", 
-                    "chocolate", "vainilla", "canela", "nuez", "mantequilla", 
-                    "crema", "almendra", "cacahuete", "mermelada", "miel", 
-                    "jengibre", "curry", "pimienta", "salvia", "romero", 
-                    "oregano", "laurel", "tomillo", "perejil", "cilantro", 
-                    "menta", "albahaca", "salsa", "sopa", "ensalada", 
-                    "guiso", "horneado", "frito", "asado", "cocido", "microondas" };
                 
                 List<string> listIng = recipeRequest.ingredients.ToList();
                 List<string> listSteps = recipeRequest.steps.ToList();
@@ -565,29 +567,47 @@ namespace TasteItApi.Controllers
 
         //UPDATES
 
-        //CREAR RECETA
+        //EDITAR RECETA
         [HttpPost("/recipe/edit")]
-        public async Task<IActionResult> PostEditRecipe([FromBody] EditRecipeRequest editRecipeRequest)
+        public async Task<IActionResult> PostEditRecipe([FromBody] EditRecipeRequest request)
         {
             try
             {
 
-                List<string> listIng = editRecipeRequest.ingredients.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-                List<string> listSteps = editRecipeRequest.steps.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-                List<string> listTags = editRecipeRequest.tags.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                List<string> listIng = request.ingredients.ToList();
+                List<string> listSteps = request.steps.ToList();
+                List<string> listTags = new List<string>();
 
+                // Obtener las palabras clave del nombre, descripción, steps e ingredientes
+                string[] keywords = request.name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Concat(request.description.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    .Concat(request.ingredients.SelectMany(i => i.Split(' ', StringSplitOptions.RemoveEmptyEntries)))
+                    .Concat(request.steps.SelectMany(s => s.Split(' ', StringSplitOptions.RemoveEmptyEntries)))
+                    .Select(w => Normalize(w.ToLower()))
+                    //.Where(w => !commonWords.Contains(w))
+                    .Distinct()
+                    .ToArray();
+
+                // Generar los tags a partir de las coincidencias con el diccionario de palabras comunes
+                foreach (string word in keywords)
+                {
+                    if (commonWords.Contains(Normalize(word)))
+                    {
+                        listTags.Add(word);
+                    }
+                }
 
                 //NOTA: hay que autogenerar los tags
 
                 await _client.Cypher
                     .Match("(r:Recipe)")
-                    .Where("Id(r)=" + editRecipeRequest.rid)
+                    .Where("Id(r)=" + request.rid)
                     .Set("r.name =$name,r.description=$description,r.country =$country,r.image=$image,r.difficulty=$difficulty,r.steps=$listSteps,r.ingredients=$listIng,r.tags=$listTags ")
-                    .WithParam("name", editRecipeRequest.name)
-                    .WithParam("description", editRecipeRequest.description)
-                    .WithParam("country", editRecipeRequest.country)
-                    .WithParam("image", editRecipeRequest.image)
-                    .WithParam("difficulty", editRecipeRequest.difficulty)
+                    .WithParam("name", request.name)
+                    .WithParam("description", request.description)
+                    .WithParam("country", request.country)
+                    .WithParam("image", request.image)
+                    .WithParam("difficulty", request.difficulty)
                     .WithParam("listIng", listIng)
                     .WithParam("listSteps", listSteps)
                     .WithParam("listTags",listTags)
@@ -605,6 +625,40 @@ namespace TasteItApi.Controllers
         }
 
 
+        [HttpGet("/recipe/check_owner/{rid}/{token}")]
+        public async Task<IActionResult> GetheckOwnerRecipe(int rid, string token)
+        {
+
+            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
+
+            var result = await _client.Cypher
+                .Match("(recipe:Recipe)-[c:Created]-(u:User)")
+                .Where("ID(recipe) = $rid")
+                .WithParam("rid", rid)
+                .Return((recipe, u) => new
+                {
+                    RecipeId = recipe.Id(),
+                    Recipe = recipe.As<Recipe>(),
+                    User = u.As<User>(),
+
+                })
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            bool confirmation = false;
+
+            if (results[0].User.token.Equals(token))
+            {
+                confirmation = true;
+            }
+
+            return Ok(confirmation);
+        }
 
     }
+
+    
+
+
 }
