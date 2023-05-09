@@ -3,7 +3,7 @@
     public class Comment
     {
         public string comment { get; set; }
-        public string dateCreated { get; set; }
+        public DateTimeOffset dateCreated { get; set; }
         public string rating { get; set; }
     }
 }
