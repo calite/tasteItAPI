@@ -140,37 +140,25 @@ namespace TasteItApi.Controllers
         }
 
 
-        //SUPER BUSCADOR BY ERNESTO
+        //[HttpGet("/recipe/searchpro")]
+        //public async Task<ActionResult<Recipe>> superbuscadordeernesto()
+        //{
+        //    //devuelve recetas filtrando por nombre seguido del usuario que la creo
+        //    var result = await _client.Cypher
+        //                    .Match("(recipe:Recipe)-[:Created]-(user:User)")
+        //                    .Return((recipe, user) => new
+        //                    {
+        //                        RecipeId = recipe.Id(),
+        //                        Recipe = recipe.As<Recipe>(),
+        //                        User = user.As<User>()
+        //                    })
+        //                    .OrderBy("recipe.dateCreated desc")
+        //                    .ResultsAsync;
 
-        [HttpGet("/recipe/searchpro")]
-        public async Task<ActionResult<Recipe>> superbuscadordeernesto()
-        {
-            //devuelve recetas filtrando por nombre seguido del usuario que la creo
-            var result = await _client.Cypher
-                            .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                            .Return((recipe, user) => new
-                            {
-                                RecipeId = recipe.Id(),
-                                Recipe = recipe.As<Recipe>(),
-                                User = user.As<User>()
-                            })
-                            .OrderBy("recipe.dateCreated desc")
-                            .ResultsAsync;
+        //    var recipe = result.ToList();
 
-            var recipe = result.ToList();
-
-
-
-
-
-
-
-
-            return Ok(recipe);
-        }
-
-
-
+        //    return Ok(recipe);
+        //}
 
 
         [HttpGet("/recipe/byname/{name}/{skipper}")]
