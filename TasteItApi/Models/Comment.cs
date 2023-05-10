@@ -4,6 +4,6 @@
     {
         public string comment { get; set; }
         public DateTimeOffset dateCreated { get; set; }
-        public string rating { get; set; }
+        public float rating { get; set; }
     }
 }

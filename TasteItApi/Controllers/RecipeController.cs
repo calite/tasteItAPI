@@ -139,40 +139,6 @@ namespace TasteItApi.Controllers
             return Ok(results);
         }
 
-
-        //SUPER BUSCADOR BY ERNESTO
-
-        [HttpGet("/recipe/searchpro")]
-        public async Task<ActionResult<Recipe>> superbuscadordeernesto()
-        {
-            //devuelve recetas filtrando por nombre seguido del usuario que la creo
-            var result = await _client.Cypher
-                            .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                            .Return((recipe, user) => new
-                            {
-                                RecipeId = recipe.Id(),
-                                Recipe = recipe.As<Recipe>(),
-                                User = user.As<User>()
-                            })
-                            .OrderBy("recipe.dateCreated desc")
-                            .ResultsAsync;
-
-            var recipe = result.ToList();
-
-
-
-
-
-
-
-
-            return Ok(recipe);
-        }
-
-
-
-
-
         [HttpGet("/recipe/byname/{name}/{skipper}")]
         public async Task<ActionResult<Recipe>> GetRecipeByName(string name, int skipper)
         {
@@ -413,7 +379,7 @@ namespace TasteItApi.Controllers
 
         //COMMENTARIO EN LA RECETA
         [HttpPost("/recipe/comment_recipe")]
-        public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest commentRequest)
+        public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest request)
         {
             string today = DateTime.Today.ToShortDateString();
 
@@ -421,11 +387,13 @@ namespace TasteItApi.Controllers
 
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
-                .Where("ID(recipe) =" + commentRequest.rid)
-                .AndWhere("user.token ='" + commentRequest.token + "'")
+                .Where("ID(recipe) = $rid")
+                .AndWhere("user.token = $token")
                 .Create("(user)-[cmt:Commented{ comment:$comment, rating:$rating, dateCreated:$dateCreated}]->(recipe)")
-                .WithParam("comment", commentRequest.comment)
-                .WithParam("rating", commentRequest.rating)
+                .WithParam("token", request.token)
+                .WithParam("rid",request.rid)
+                .WithParam("comment", request.comment)
+                .WithParam("rating", request.rating)
                 .WithParam("dateCreated", today)
                 .Return((recipe, user, cmt) => new
                 {
@@ -436,9 +404,44 @@ namespace TasteItApi.Controllers
                 })
                 .ResultsAsync;
 
+            //await updateRatingRecipeAsync(request.rid);
+
             var recipe = result.ToList();
 
             return Ok(recipe);
+        }
+
+        private async Task updateRatingRecipeAsync(int recipeId)
+        {
+            var result = await _client.Cypher
+                .Match("(recipe:Recipe)-[c:Commented]-(u:User)")
+                .Where("ID(recipe) = $rid")
+                .WithParam("rid", recipeId)
+                .Return((c) => new
+                {
+                    c = c.As<Comment>()
+
+                })
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            var total = 0.0;
+
+            foreach (var comment in results)
+            {
+                total += comment.c.rating;
+            }
+
+            total = total / results.Count;
+
+            await _client.Cypher
+                .Match("(r:Recipe)")
+                .Where("ID(r)=$rid")
+                .Set(" r.rating =$total")
+                .WithParam("rid",recipeId)
+                .WithParam("rating",total)
+                .ExecuteWithoutResultsAsync();
         }
 
         //REPORTAR UNA RECETA
