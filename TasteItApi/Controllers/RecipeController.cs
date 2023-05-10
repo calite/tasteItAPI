@@ -139,6 +139,31 @@ namespace TasteItApi.Controllers
             return Ok(results);
         }
 
+<<<<<<< HEAD
+=======
+
+        //[HttpGet("/recipe/searchpro")]
+        //public async Task<ActionResult<Recipe>> superbuscadordeernesto()
+        //{
+        //    //devuelve recetas filtrando por nombre seguido del usuario que la creo
+        //    var result = await _client.Cypher
+        //                    .Match("(recipe:Recipe)-[:Created]-(user:User)")
+        //                    .Return((recipe, user) => new
+        //                    {
+        //                        RecipeId = recipe.Id(),
+        //                        Recipe = recipe.As<Recipe>(),
+        //                        User = user.As<User>()
+        //                    })
+        //                    .OrderBy("recipe.dateCreated desc")
+        //                    .ResultsAsync;
+
+        //    var recipe = result.ToList();
+
+        //    return Ok(recipe);
+        //}
+
+
+>>>>>>> c49ab5644167bdbd1784b798d7901d2b647f2da6
         [HttpGet("/recipe/byname/{name}/{skipper}")]
         public async Task<ActionResult<Recipe>> GetRecipeByName(string name, int skipper)
         {
