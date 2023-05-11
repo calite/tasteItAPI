@@ -264,7 +264,7 @@ namespace TasteItApi.Controllers
             //tokenManolo = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
             //tokenPepito = "ZdoWamcZHHT26CG9IM7tKnze3ul2";
 
-            string today = DateTime.Today.ToShortDateString();
+            DateTime today = DateTime.Now;
 
             var result = await _client.Cypher
                .Match("(sender:User)-[follow:Following]->(receiver:User)")
@@ -327,7 +327,7 @@ namespace TasteItApi.Controllers
         [HttpPost("/user/comment_user")]
         public async Task<IActionResult> PostCommentUser([FromBody] CommentUserRequest request)
         {
-            string today = DateTime.Today.ToShortDateString();
+            DateTime today = DateTime.Now;
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
             await _client.Cypher

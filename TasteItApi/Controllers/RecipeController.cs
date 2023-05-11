@@ -139,31 +139,7 @@ namespace TasteItApi.Controllers
             return Ok(results);
         }
 
-<<<<<<< HEAD
-=======
 
-        //[HttpGet("/recipe/searchpro")]
-        //public async Task<ActionResult<Recipe>> superbuscadordeernesto()
-        //{
-        //    //devuelve recetas filtrando por nombre seguido del usuario que la creo
-        //    var result = await _client.Cypher
-        //                    .Match("(recipe:Recipe)-[:Created]-(user:User)")
-        //                    .Return((recipe, user) => new
-        //                    {
-        //                        RecipeId = recipe.Id(),
-        //                        Recipe = recipe.As<Recipe>(),
-        //                        User = user.As<User>()
-        //                    })
-        //                    .OrderBy("recipe.dateCreated desc")
-        //                    .ResultsAsync;
-
-        //    var recipe = result.ToList();
-
-        //    return Ok(recipe);
-        //}
-
-
->>>>>>> c49ab5644167bdbd1784b798d7901d2b647f2da6
         [HttpGet("/recipe/byname/{name}/{skipper}")]
         public async Task<ActionResult<Recipe>> GetRecipeByName(string name, int skipper)
         {
@@ -268,7 +244,7 @@ namespace TasteItApi.Controllers
             for (int i = 0; i < recipes.Count; i++)
             {
                 //miramos si la lista de los ingredientes contiene alguno de los elementos de los introducidos por el usuario
-                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => y.ToLower() == x.ToLower()));
+                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => x.ToLower().Contains( y.ToLower() ) ));
 
                 if (hasMatch)
                 {
@@ -311,7 +287,7 @@ namespace TasteItApi.Controllers
             for (int i = 0; i < recipes.Count; i++)
             {
                 //miramos si la lista de los ingredientes contiene alguno de los elementos de los introducidos por el usuario
-                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listTags.Any(y => y.ToLower() == x.ToLower()));
+                bool hasMatch = recipes[i].Recipe.tags.Any(x => listTags.Any(y => y.ToLower() == x.ToLower()));
 
                 if (hasMatch)
                 {
@@ -337,10 +313,9 @@ namespace TasteItApi.Controllers
                        .ToString().Normalize(NormalizationForm.FormC);
         }
 
-        [AllowAnonymous]
         //CREAR RECETA
+        [AllowAnonymous]
         [HttpPost("/recipe/create")]
-        //public async Task<IActionResult> PostCreateRecipe(string token, string name, string description, string country, string image, int difficulty, string ingredients, string steps, string tags)
         public async Task<IActionResult> PostCreateRecipe([FromBody] RecipeRequest recipeRequest)
         {
             try
@@ -350,7 +325,7 @@ namespace TasteItApi.Controllers
 
                 //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
-                string today = DateTime.Today.ToShortDateString();
+                DateTime today = DateTime.Now;
 
                 
                 List<string> listIng = recipeRequest.ingredients.ToList();
@@ -379,7 +354,7 @@ namespace TasteItApi.Controllers
                 await _client.Cypher
                     .Match("(user: User)")
                     .Where((User user) => user.token == recipeRequest.token)
-                    .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags})-[c:Created]->(user)")
+                    .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags,rating:0.0})-[c:Created]->(user)")
                     .WithParam("name", recipeRequest.name)
                     .WithParam("description", recipeRequest.description)
                     .WithParam("country", recipeRequest.country)
@@ -406,10 +381,9 @@ namespace TasteItApi.Controllers
         [HttpPost("/recipe/comment_recipe")]
         public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest request)
         {
-            string today = DateTime.Today.ToShortDateString();
+            DateTime today = DateTime.Now;
 
-            //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
-
+            
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
                 .Where("ID(recipe) = $rid")
@@ -428,16 +402,19 @@ namespace TasteItApi.Controllers
                     cmt = cmt.As<Comment>()
                 })
                 .ResultsAsync;
+            
+            
+            await updateRatingRecipeAsync(request.rid);
 
-            //await updateRatingRecipeAsync(request.rid);
+            //var recipe = result.ToList();
 
-            var recipe = result.ToList();
-
-            return Ok(recipe);
+            return Ok();
         }
 
         private async Task updateRatingRecipeAsync(int recipeId)
         {
+            var total = 0.0;
+
             var result = await _client.Cypher
                 .Match("(recipe:Recipe)-[c:Commented]-(u:User)")
                 .Where("ID(recipe) = $rid")
@@ -451,7 +428,6 @@ namespace TasteItApi.Controllers
 
             var results = result.ToList();
 
-            var total = 0.0;
 
             foreach (var comment in results)
             {
@@ -462,10 +438,10 @@ namespace TasteItApi.Controllers
 
             await _client.Cypher
                 .Match("(r:Recipe)")
-                .Where("ID(r)=$rid")
-                .Set(" r.rating =$total")
-                .WithParam("rid",recipeId)
-                .WithParam("rating",total)
+                .Where("ID(r)= $rid")
+                .Set("r.rating = $total")
+                .WithParam("rid", recipeId)
+                .WithParam("total",total)
                 .ExecuteWithoutResultsAsync();
         }
 
@@ -473,7 +449,7 @@ namespace TasteItApi.Controllers
         [HttpPost("/recipe/report_recipe")]
         public async Task<IActionResult> PostReportRecipe([FromBody] ReportRecipeRequest reportRecipeRequest)
         {
-            string today = DateTime.Today.ToShortDateString();
+            DateTime today = DateTime.Now;
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 
@@ -532,7 +508,7 @@ namespace TasteItApi.Controllers
         [HttpPost("/recipe/like")]
         public async Task<IActionResult> PostLikeOnRecipe(LikeRecipeRequest likeRecipeRequest)
         {
-            string today = DateTime.Today.ToShortDateString();
+            DateTime today = DateTime.Now;
 
             //token = "xmg10sMQgMS4392zORWGW7TQ1Qg2";
 

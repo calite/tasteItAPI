@@ -12,6 +12,7 @@ namespace TasteItApi.Models
         public string image { get; set; }
         public  string dateCreated { get; set; }
         public  string country { get; set; }
+        public float rating { get; set; }
         public List<string> ingredients { get; set; }
         public List<string> tags { get; set; }
         public List<string> steps { get; set; }
