@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using TasteItApi.authentication;
 using TasteItApi.Models;
 using TasteItApi.Requests;
@@ -692,6 +693,54 @@ namespace TasteItApi.Controllers
             }
 
             return Ok(confirmation);
+        }
+
+
+        //BETA - IA
+        [AllowAnonymous]
+        [HttpGet("/recipe/generate_recipe")]
+        public async Task<string> GetDavinciResponse(string prompt)
+        {
+            var url = "https://api.openai.com/v1/engines/text-davinci-003/completions";
+
+            var api_key = "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";
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api_key);
+
+            var requestBody = new
+            {
+                prompt,
+                max_tokens = 50,
+                n = 1,
+                temperature = 1,
+                stop = "\n"
+            };
+
+            var response = await client.PostAsync(url, new StringContent(JsonSerializer.Serialize(requestBody)));
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<OpenAIResult>(content);
+                return result.choices[0].text;
+            }
+            else
+            {
+                return $"Error: {response.ReasonPhrase}";
+            }
+        }
+
+        class OpenAIResult
+        {
+            public OpenAIChoice[] choices { get; set; }
+        }
+
+        class OpenAIChoice
+        {
+            public string text { get; set; }
+            public double logprobs { get; set; }
+            public int finish_reason { get; set; }
         }
 
     }
