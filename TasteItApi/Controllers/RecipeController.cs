@@ -315,7 +315,6 @@ namespace TasteItApi.Controllers
         }
 
         //CREAR RECETA
-        [AllowAnonymous]
         [HttpPost("/recipe/create")]
         public async Task<IActionResult> PostCreateRecipe([FromBody] RecipeRequest recipeRequest)
         {
