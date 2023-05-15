@@ -31,7 +31,7 @@ namespace TasteItApi.Controllers
         string[] commonWords = new string[] {
                     "sal", "azucar", "aceite", "cebolla",
                     "ajo", "tomate", "pollo", "carne", "pescado",
-                    "arroz", "pasta", "huevo", "huevos", "leche", "harina",
+                    "arroz", "pasta", "huevo", "leche", "harina",
                     "pan", "queso", "mayonesa", "mostaza", "vinagre",
                     "limon", "naranja", "manzana", "platano", "fresa",
                     "chocolate", "vainilla", "canela", "nuez", "mantequilla",
@@ -694,6 +694,19 @@ namespace TasteItApi.Controllers
             return Ok(confirmation);
         }
 
+        [HttpPost("/recipe/delete")]
+        public async Task<IActionResult> PostDeleteRecipe([FromBody] DeleteRecipeRequest request)
+        {
+
+            await _client.Cypher
+                .Match("(r:Recipe)")
+                .Where("ID(r) = $recipeId")
+                .DetachDelete("r")
+                .WithParam("recipeId", request.RecipeId)
+                .ExecuteWithoutResultsAsync();
+
+            return Ok();
+        }
 
         //BETA - IA
         [AllowAnonymous]

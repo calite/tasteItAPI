@@ -429,5 +429,19 @@ namespace TasteItApi.Controllers
         }
 
 
+        [HttpPost("/user/delete")]
+        public async Task<IActionResult> PostDeleteUser([FromBody] DeleteUserRequest request)
+        {
+
+            await _client.Cypher
+                .Match("(u:User)-[c:Created]-(r:Recipe)")
+                .Where("u.token = $token")
+                .DetachDelete("u,r")
+                .WithParam("token", request.token)
+                .ExecuteWithoutResultsAsync();
+
+            return Ok();
+        }
+
     }
 }
