@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -235,6 +236,8 @@ namespace TasteItApi.Controllers
                                 User = user.As<User>()
                             })
                             .OrderBy("recipe.dateCreated desc")
+                            .Skip(skipper)
+                            .Limit(10)
                             .ResultsAsync;
 
             var recipes = result.ToList();
@@ -278,6 +281,8 @@ namespace TasteItApi.Controllers
                                 User = user.As<User>()
                             })
                             .OrderBy("recipe.dateCreated desc")
+                            .Skip(skipper)
+                            .Limit(10)
                             .ResultsAsync;
 
             var recipes = result.ToList();
@@ -708,52 +713,99 @@ namespace TasteItApi.Controllers
             return Ok();
         }
 
-        //BETA - IA
+        [HttpGet("/recipe/likes_on_recipes/{rid}")]
+        public async Task<IActionResult> GetCountLikesOnRecipe(int rid)
+        {
+
+            var result = await _client.Cypher
+                .Match("(u:User)-[count:Liked]->(r:Recipe)")
+                .Where("ID(r) = $rid")
+                .WithParam("rid", rid)
+                .Return(r => r.Count())
+                .ResultsAsync;
+
+            return Ok(result);
+        }
+
         [AllowAnonymous]
-        [HttpGet("/recipe/generate_recipe")]
-        public async Task<string> GetDavinciResponse(string prompt)
+        [HttpGet("/recipe/search")]
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating)
         {
-            var url = "https://api.openai.com/v1/engines/text-davinci-003/completions";
+            //, string? tags, string? ingredients, string? difficulty, int? rating
+            var result = await _client.Cypher
+                .Match("(recipe:Recipe)-[c:Created]-(user:User)")
+                .Where("($name IS NULL OR toLower(recipe.name) CONTAINS toLower($name))")
+                .AndWhere("($country IS NULL OR toLower(recipe.country) CONTAINS toLower($country))")
+                .AndWhere("($difficulty IS NULL OR recipe.difficulty = $difficulty)")
+                .AndWhere("($rating IS NULL OR recipe.rating = $rating)")
+                .WithParam("name" , name)
+                .WithParam("country", country)
+                .WithParam("difficulty", difficulty)
+                .WithParam("rating",rating)
+                .Return((recipe, user) => new
+                {
+                    RecipeId = recipe.Id(),
+                    Recipe = recipe.As<Recipe>(),
+                    User = user.As<User>()
+                })
+                .OrderBy("recipe.dateCreated desc")
+                .ResultsAsync;
 
-            var api_key = "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";
+            var recipesFilteredByParams = result.ToList();
 
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api_key);
-
-            var requestBody = new
-            {
-                prompt,
-                max_tokens = 50,
-                n = 1,
-                temperature = 1,
-                stop = "\n"
-            };
-
-            var response = await client.PostAsync(url, new StringContent(JsonSerializer.Serialize(requestBody)));
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<OpenAIResult>(content);
-                return result.choices[0].text;
-            }
-            else
-            {
-                return $"Error: {response.ReasonPhrase}";
-            }
+            return Ok(recipesFilteredByParams);
         }
 
-        class OpenAIResult
-        {
-            public OpenAIChoice[] choices { get; set; }
-        }
 
-        class OpenAIChoice
-        {
-            public string text { get; set; }
-            public double logprobs { get; set; }
-            public int finish_reason { get; set; }
-        }
+
+        ////BETA - IA
+        //[AllowAnonymous]
+        //[HttpGet("/recipe/generate_recipe")]
+        //public async Task<string> GetDavinciResponse(string prompt)
+        //{
+        //    var url = "https://api.openai.com/v1/engines/text-davinci-003/completions";
+
+        //    var api_key = "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";
+
+        //    using var client = new HttpClient();
+        //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api_key);
+        //    client.DefaultRequestHeaders.Accept.Clear();
+        //    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        //    var requestBody = new
+        //    {
+        //        prompt = "hola",
+        //        max_tokens = 50,
+        //        n = 1,
+        //        temperature = 1,
+        //        stop = "\n"
+        //    };
+
+        //    var response = await client.PostAsync(url, new StringContent(JsonSerializer.Serialize(requestBody)));
+
+        //    if (response.IsSuccessStatusCode)
+        //    {
+        //        var content = await response.Content.ReadAsStringAsync();
+        //        var result = JsonSerializer.Deserialize<OpenAIResult>(content);
+        //        return result.choices[0].text;
+        //    }
+        //    else
+        //    {
+        //        return $"Error: {response.ReasonPhrase}";
+        //    }
+        //}
+
+        //class OpenAIResult
+        //{
+        //    public OpenAIChoice[] choices { get; set; }
+        //}
+
+        //class OpenAIChoice
+        //{
+        //    public string text { get; set; }
+        //    public double logprobs { get; set; }
+        //    public int finish_reason { get; set; }
+        //}
 
     }
 
