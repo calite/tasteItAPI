@@ -43,7 +43,7 @@ namespace TasteItApi.Controllers
                     "guiso", "horneado", "frito", "asado", "cocido", "microondas" };
 
 
-    public RecipeController(IGraphClient client)
+        public RecipeController(IGraphClient client)
         {
             _client = client;
 
@@ -248,7 +248,7 @@ namespace TasteItApi.Controllers
             for (int i = 0; i < recipes.Count; i++)
             {
                 //miramos si la lista de los ingredientes contiene alguno de los elementos de los introducidos por el usuario
-                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => x.ToLower().Contains( y.ToLower() ) ));
+                bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => x.ToLower().Contains(y.ToLower())));
 
                 if (hasMatch)
                 {
@@ -332,7 +332,7 @@ namespace TasteItApi.Controllers
 
                 DateTime today = DateTime.Now;
 
-                
+
                 List<string> listIng = recipeRequest.ingredients.ToList();
                 List<string> listSteps = recipeRequest.steps.ToList();
                 List<string> listTags = new List<string>();
@@ -370,7 +370,7 @@ namespace TasteItApi.Controllers
                     .WithParam("ingredients", listIng)
                     .WithParam("tags", listTags)
                     .ExecuteWithoutResultsAsync();
-                
+
                 return Ok();
 
                 // No se devuelve nada explícitamente, ya que se usa "async Task" como tipo de retorno
@@ -388,14 +388,14 @@ namespace TasteItApi.Controllers
         {
             DateTime today = DateTime.Now;
 
-            
+
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
                 .Where("ID(recipe) = $rid")
                 .AndWhere("user.token = $token")
                 .Create("(user)-[cmt:Commented{ comment:$comment, rating:$rating, dateCreated:$dateCreated}]->(recipe)")
                 .WithParam("token", request.token)
-                .WithParam("rid",request.rid)
+                .WithParam("rid", request.rid)
                 .WithParam("comment", request.comment)
                 .WithParam("rating", request.rating)
                 .WithParam("dateCreated", today)
@@ -407,8 +407,8 @@ namespace TasteItApi.Controllers
                     cmt = cmt.As<Comment>()
                 })
                 .ResultsAsync;
-            
-            
+
+
             await updateRatingRecipeAsync(request.rid);
 
             //var recipe = result.ToList();
@@ -446,7 +446,7 @@ namespace TasteItApi.Controllers
                 .Where("ID(r)= $rid")
                 .Set("r.rating = $total")
                 .WithParam("rid", recipeId)
-                .WithParam("total",total)
+                .WithParam("total", total)
                 .ExecuteWithoutResultsAsync();
         }
 
@@ -498,10 +498,11 @@ namespace TasteItApi.Controllers
 
             bool isLiked;
 
-            if(recipe.Count == 0)
+            if (recipe.Count == 0)
             {
                 isLiked = false;
-            }else
+            }
+            else
             {
                 isLiked = true;
             }
@@ -653,7 +654,7 @@ namespace TasteItApi.Controllers
                     .WithParam("difficulty", request.difficulty)
                     .WithParam("listIng", listIng)
                     .WithParam("listSteps", listSteps)
-                    .WithParam("listTags",listTags)
+                    .WithParam("listTags", listTags)
                     .ExecuteWithoutResultsAsync();
 
                 return Ok();
@@ -729,19 +730,31 @@ namespace TasteItApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("/recipe/search")]
-        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating)
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating, string? ingredients, string? tags)
         {
-            //, string? tags, string? ingredients, string? difficulty, int? rating
+            List<string> listIng = new List<string>();
+            List<string> listTags = new List<string>();
+
+            if (ingredients != null)
+            {
+                listIng = ingredients.Replace(" ", "").Split(",").ToList();
+            }
+
+            if (tags != null)
+            {
+                listTags = tags.Replace(" ", "").Split(",").ToList();
+            }
+
             var result = await _client.Cypher
                 .Match("(recipe:Recipe)-[c:Created]-(user:User)")
                 .Where("($name IS NULL OR toLower(recipe.name) CONTAINS toLower($name))")
                 .AndWhere("($country IS NULL OR toLower(recipe.country) CONTAINS toLower($country))")
                 .AndWhere("($difficulty IS NULL OR recipe.difficulty = $difficulty)")
                 .AndWhere("($rating IS NULL OR recipe.rating = $rating)")
-                .WithParam("name" , name)
+                .WithParam("name", name)
                 .WithParam("country", country)
                 .WithParam("difficulty", difficulty)
-                .WithParam("rating",rating)
+                .WithParam("rating", rating)
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
@@ -751,65 +764,127 @@ namespace TasteItApi.Controllers
                 .OrderBy("recipe.dateCreated desc")
                 .ResultsAsync;
 
-            var recipesFilteredByParams = result.ToList();
+            var recipes = result.ToList();
 
-            return Ok(recipesFilteredByParams);
+            List<RecipeId_Recipe_User> listRecipesFiltered = new List<RecipeId_Recipe_User>();
+
+            if (listIng.Count > 0 && listTags.Count == 0) // Filtrar solo por ingredientes
+            {
+                for (int i = 0; i < recipes.Count; i++)
+                {
+                    bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => x.ToLower().Contains(y.ToLower())));
+
+                    if (hasMatch)
+                    {
+                        listRecipesFiltered.Add(new RecipeId_Recipe_User
+                        {
+                            RecipeId = recipes[i].RecipeId,
+                            Recipe = recipes[i].Recipe.As<Recipe>(),
+                            User = recipes[i].User.As<User>()
+                        });
+                    }
+                }
+            }
+            else if (listTags.Count > 0 && listIng.Count == 0) // Filtrar solo por tags
+            {
+                for (int i = 0; i < recipes.Count; i++)
+                {
+                    bool hasMatch = recipes[i].Recipe.tags.Any(x => listTags.Any(y => x.ToLower().Contains(y.ToLower())));
+
+                    if (hasMatch)
+                    {
+                        listRecipesFiltered.Add(new RecipeId_Recipe_User
+                        {
+                            RecipeId = recipes[i].RecipeId,
+                            Recipe = recipes[i].Recipe.As<Recipe>(),
+                            User = recipes[i].User.As<User>()
+                        });
+                    }
+                }
+            }
+            else if (listIng.Count > 0 && listTags.Count > 0) // Filtrar por ingredientes y tags
+            {
+                for (int i = 0; i < recipes.Count; i++)
+                {
+                    bool hasIngredientMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => x.ToLower().Contains(y.ToLower())));
+                    bool hasTagMatch = recipes[i].Recipe.tags.Any(x => listTags.Any(y => x.ToLower().Contains(y.ToLower())));
+
+                    if (hasIngredientMatch && hasTagMatch)
+                    {
+                        listRecipesFiltered.Add(new RecipeId_Recipe_User
+                        {
+                            RecipeId = recipes[i].RecipeId,
+                            Recipe = recipes[i].Recipe.As<Recipe>(),
+                            User = recipes[i].User.As<User>()
+                        });
+                    }
+                }
+            }
+
+            if (listRecipesFiltered.Count > 0)
+            {
+                return Ok(listRecipesFiltered);
+            }
+            else
+            {
+                return Ok(recipes);
+            }
         }
 
 
 
-        ////BETA - IA
-        //[AllowAnonymous]
-        //[HttpGet("/recipe/generate_recipe")]
-        //public async Task<string> GetDavinciResponse(string prompt)
-        //{
-        //    var url = "https://api.openai.com/v1/engines/text-davinci-003/completions";
+            ////BETA - IA
+            //[AllowAnonymous]
+            //[HttpGet("/recipe/generate_recipe")]
+            //public async Task<string> GetDavinciResponse(string prompt)
+            //{
+            //    var url = "https://api.openai.com/v1/engines/text-davinci-003/completions";
 
-        //    var api_key = "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";
+            //    var api_key = "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";
 
-        //    using var client = new HttpClient();
-        //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api_key);
-        //    client.DefaultRequestHeaders.Accept.Clear();
-        //    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            //    using var client = new HttpClient();
+            //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api_key);
+            //    client.DefaultRequestHeaders.Accept.Clear();
+            //    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        //    var requestBody = new
-        //    {
-        //        prompt = "hola",
-        //        max_tokens = 50,
-        //        n = 1,
-        //        temperature = 1,
-        //        stop = "\n"
-        //    };
+            //    var requestBody = new
+            //    {
+            //        prompt = "hola",
+            //        max_tokens = 50,
+            //        n = 1,
+            //        temperature = 1,
+            //        stop = "\n"
+            //    };
 
-        //    var response = await client.PostAsync(url, new StringContent(JsonSerializer.Serialize(requestBody)));
+            //    var response = await client.PostAsync(url, new StringContent(JsonSerializer.Serialize(requestBody)));
 
-        //    if (response.IsSuccessStatusCode)
-        //    {
-        //        var content = await response.Content.ReadAsStringAsync();
-        //        var result = JsonSerializer.Deserialize<OpenAIResult>(content);
-        //        return result.choices[0].text;
-        //    }
-        //    else
-        //    {
-        //        return $"Error: {response.ReasonPhrase}";
-        //    }
-        //}
+            //    if (response.IsSuccessStatusCode)
+            //    {
+            //        var content = await response.Content.ReadAsStringAsync();
+            //        var result = JsonSerializer.Deserialize<OpenAIResult>(content);
+            //        return result.choices[0].text;
+            //    }
+            //    else
+            //    {
+            //        return $"Error: {response.ReasonPhrase}";
+            //    }
+            //}
 
-        //class OpenAIResult
-        //{
-        //    public OpenAIChoice[] choices { get; set; }
-        //}
+            //class OpenAIResult
+            //{
+            //    public OpenAIChoice[] choices { get; set; }
+            //}
 
-        //class OpenAIChoice
-        //{
-        //    public string text { get; set; }
-        //    public double logprobs { get; set; }
-        //    public int finish_reason { get; set; }
-        //}
+            //class OpenAIChoice
+            //{
+            //    public string text { get; set; }
+            //    public double logprobs { get; set; }
+            //    public int finish_reason { get; set; }
+            //}
+
+        }
+
+
+
 
     }
-
-    
-
-
-}

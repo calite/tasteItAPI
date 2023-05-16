@@ -434,13 +434,15 @@ namespace TasteItApi.Controllers
         {
 
             await _client.Cypher
-                .Match("(u:User)-[c:Created]-(r:Recipe)")
+                .Match("(u:User)")
                 .Where("u.token = $token")
-                .DetachDelete("u,r")
+                .OptionalMatch("(u)-[c:Created]-(r:Recipe)")
                 .WithParam("token", request.token)
+                .DetachDelete("u, r, c")
                 .ExecuteWithoutResultsAsync();
 
             return Ok();
+
         }
 
     }
