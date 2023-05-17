@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
+using Neo4jClient.Extensions;
 using TasteItApi.Models;
+using TasteItApi.Requests;
 
 namespace TasteItApi.Controllers
 {
@@ -15,25 +17,27 @@ namespace TasteItApi.Controllers
         }
 
         [HttpGet("admin/recipes/all/{skipper:int}")]
-        public async Task<ActionResult<Recipe>> GetAllRecipesWithSkipper(int skipper)
+        public async Task<ActionResult<List<object>>> GetRecipesReported(int skipper)
         {
-            //devuelve las recetas seguido del usuario que la creo
-            var result = await _client.Cypher
-                .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                .Return((recipe, user) => new
+            var query = await _client.Cypher
+                .Match("(recipe:Recipe)-[:Created]-(u1:User)")
+                .OptionalMatch("(recipe)-[report:Reported]-(u2:User)")
+                .Return((recipe, u1, report) => new
                 {
-                    RecipeId = recipe.Id(),
-                    Recipe = recipe.As<Recipe>(),
-                    User = user.As<User>()
+                    recipeId = recipe.Id(),
+                    recipe = recipe.As<RecipeWEB>(),
+                    creator = u1.As<User>(),
+                    reportsCount = report.Count()
                 })
-                .OrderBy("recipe.dateCreated desc")
+                .OrderByDescending("recipe.dateCreated")
                 .Skip(skipper)
-                .Limit(10)
+                .Limit(20)
                 .ResultsAsync;
 
-            var results = result.ToList();
 
-            return Ok(results);
+            var results = query.ToList();
+
+            return Ok(results.ToList());
         }
 
         [HttpGet("/admin/recipe/{id:int}")]
@@ -55,6 +59,22 @@ namespace TasteItApi.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("/admin/recipe/change_state")]
+        public async Task<IActionResult> PostChangeStateRecipe([FromBody] ChangeStateRecipeRequest request)
+        {
+            var query = await _client.Cypher
+                .Match("(recipe:Recipe)")
+                .Where("Id(recipe) = $rid")
+                .Set("recipe.active = $value")
+                .WithParam("rid", request.rid)
+                .WithParam("value", request.value)
+                .Return(recipe => recipe.As<RecipeWEB>())
+                .ResultsAsync;
+
+            return Ok(query.ToList());
+        }
+
 
 
 
