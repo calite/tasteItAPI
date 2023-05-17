@@ -55,6 +55,7 @@ namespace TasteItApi.Controllers
             //devuelve las recetas seguido del usuario que la creo
             var result = await _client.Cypher
                 .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                .Where("recipe.active = true")
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
@@ -81,6 +82,7 @@ namespace TasteItApi.Controllers
             //devuelve las recetas seguido del usuario que la creo
             var result = await _client.Cypher
                 .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                .Where("recipe.active = true")
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
@@ -104,6 +106,7 @@ namespace TasteItApi.Controllers
             var result = await _client.Cypher
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
                 .Where("ID(recipe) = " + id)
+                .AndWhere("recipe.active = true")
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
@@ -124,6 +127,7 @@ namespace TasteItApi.Controllers
             //devuelve un numero aleatorio de recetas seguido del usuario que la creo
             var result = await _client.Cypher
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                .Where("recipe.active = true")
                 .With("recipe, rand() as rand")
                 .OrderBy("rand limit $limit")
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
@@ -131,7 +135,7 @@ namespace TasteItApi.Controllers
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
-                    Recipe = recipe.As<Recipe>(),
+                    Recipe = recipe.As<RecipeWEB>(),
                     User = user.As<User>()
                 })
                 .ResultsAsync;
@@ -148,8 +152,8 @@ namespace TasteItApi.Controllers
             //devuelve recetas filtrando por nombre seguido del usuario que la creo
             var result = await _client.Cypher
                             .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                            //.Where((Recipe recipe) => recipe.name.Contains(name))
                             .Where("toLower(recipe.name) CONTAINS toLower($name)")
+                            .AndWhere("recipe.active = true")
                             .WithParam("name", name)
                             .Return((recipe, user) => new
                             {
@@ -174,8 +178,8 @@ namespace TasteItApi.Controllers
             //filtramos recetas por ciudad seguido del usuario que la creo
             var result = await _client.Cypher
                             .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                            //.Where((Recipe recipe) => recipe.country.Contains(country))
                             .Where("toLower(recipe.country) CONTAINS toLower($country)")
+                            .AndWhere("recipe.active = true")
                             .WithParam("country", country)
                             .Return((recipe, user) => new
                             {
@@ -204,6 +208,7 @@ namespace TasteItApi.Controllers
             var result = await _client.Cypher
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
                 .Where((User user) => user.token == token)
+                .AndWhere("recipe.active = true")
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
@@ -229,6 +234,7 @@ namespace TasteItApi.Controllers
 
             var result = await _client.Cypher
                             .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                            .Where("recipe.active = true")
                             .Return((recipe, user) => new
                             {
                                 RecipeId = recipe.Id(),
@@ -274,6 +280,7 @@ namespace TasteItApi.Controllers
 
             var result = await _client.Cypher
                             .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                            .Where("recipe.active = true")
                             .Return((recipe, user) => new
                             {
                                 RecipeId = recipe.Id(),
@@ -359,7 +366,7 @@ namespace TasteItApi.Controllers
                 await _client.Cypher
                     .Match("(user: User)")
                     .Where((User user) => user.token == recipeRequest.token)
-                    .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags,rating:0.0})-[c:Created]->(user)")
+                    .Create("(recipe:Recipe {name:$name,description:$description,country:$country,dateCreated:$dateCreated,image:$image,difficulty:$difficulty,steps:$steps,ingredients:$ingredients,tags:$tags,rating:0.0,active:true})-[c:Created]->(user)")
                     .WithParam("name", recipeRequest.name)
                     .WithParam("description", recipeRequest.description)
                     .WithParam("country", recipeRequest.country)
@@ -387,7 +394,6 @@ namespace TasteItApi.Controllers
         public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest request)
         {
             DateTime today = DateTime.Now;
-
 
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
@@ -646,7 +652,7 @@ namespace TasteItApi.Controllers
                 await _client.Cypher
                     .Match("(r:Recipe)")
                     .Where("Id(r)=" + request.rid)
-                    .Set("r.name =$name,r.description=$description,r.country =$country,r.image=$image,r.difficulty=$difficulty,r.steps=$listSteps,r.ingredients=$listIng,r.tags=$listTags ")
+                    .Set("r.name =$name,r.description=$description,r.country=$country,r.image=$image,r.difficulty=$difficulty,r.steps=$listSteps,r.ingredients=$listIng,r.tags=$listTags ")
                     .WithParam("name", request.name)
                     .WithParam("description", request.description)
                     .WithParam("country", request.country)
@@ -751,6 +757,7 @@ namespace TasteItApi.Controllers
                 .AndWhere("($country IS NULL OR toLower(recipe.country) CONTAINS toLower($country))")
                 .AndWhere("($difficulty IS NULL OR recipe.difficulty = $difficulty)")
                 .AndWhere("($rating IS NULL OR recipe.rating = $rating)")
+                .AndWhere("recipe.active = true")
                 .WithParam("name", name)
                 .WithParam("country", country)
                 .WithParam("difficulty", difficulty)

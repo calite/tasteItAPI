@@ -74,6 +74,23 @@ namespace TasteItApi.Controllers
             return Ok(user);
         }
 
+        //para web
+        [HttpGet("/user/bytoken-web/{token}")]
+        public async Task<ActionResult<User>> GetUserByTokenWEB(string token)
+        {
+
+            var result = await _client.Cypher
+                    .Match("(u:User)")
+                    .Where((UserWEB u) => u.token == token)
+                    .Return(u => u.As<UserWEB>())
+                    .ResultsAsync;
+
+            var user = result.FirstOrDefault();
+
+            return Ok(user);
+
+        }
+
         //DEVUELVE LAS RECETAS  QUE A UN USUARIO LE GUSTAN
         [HttpGet("/user/liked_recipes/{token}/{skipper}")]
         public async Task<IActionResult> GetRecipesLiked(string token, int skipper)
