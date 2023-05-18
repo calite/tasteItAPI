@@ -43,7 +43,7 @@ namespace TasteItApi.Controllers
         [HttpGet("/admin/recipe/{id:int}")]
         public async Task<ActionResult<Recipe>> GetRecipeById(int id)
         {
-            //devuelve las recetas seguido del usuario que la creo
+
             var result = await _client.Cypher
                 .Match("(user:User)-[:Created]-(recipe:Recipe)")
                 .Where("ID(recipe) = " + id)
@@ -73,6 +73,25 @@ namespace TasteItApi.Controllers
                 .ResultsAsync;
 
             return Ok(query.ToList());
+        }
+
+        [HttpGet("/admin/reports-recipe/{id:int}")]
+        public async Task<ActionResult<Recipe>> GetReportsOnRecipe(int id)
+        {
+
+            var result = await _client.Cypher
+                .Match("(user:User)-[report:Reported]-(recipe:Recipe)")
+                .Where("ID(recipe) = " + id)
+                .Return((user, report) => new
+                {
+                    User = user.As<User>(),
+                    Report = report.As<Report>()
+                })
+                .ResultsAsync;
+
+            var results = result.ToList();
+
+            return Ok(results);
         }
 
 
