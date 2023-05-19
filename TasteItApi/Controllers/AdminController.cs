@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
 using Neo4jClient.Extensions;
@@ -7,7 +8,10 @@ using TasteItApi.Requests;
 
 namespace TasteItApi.Controllers
 {
-    public class AdminController : ControllerBase
+    [Authorize]
+    [ApiController]
+    [Route("controller")]
+    public class AdminController : Controller
     {
         private readonly IGraphClient _client;
 
@@ -16,7 +20,7 @@ namespace TasteItApi.Controllers
             _client = client;
         }
 
-        [HttpGet("admin/recipes/all/{skipper:int}")]
+        [HttpGet("/admin/recipes/all/{skipper:int}")]
         public async Task<ActionResult<List<object>>> GetRecipesReported(int skipper)
         {
             var query = await _client.Cypher
@@ -41,7 +45,7 @@ namespace TasteItApi.Controllers
         }
 
         [HttpGet("/admin/recipe/{id:int}")]
-        public async Task<ActionResult<Recipe>> GetRecipeById(int id)
+        public async Task<ActionResult<Recipe>> GetRecipeReportedById(int id)
         {
 
             var result = await _client.Cypher
@@ -50,7 +54,7 @@ namespace TasteItApi.Controllers
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
-                    Recipe = recipe.As<Recipe>(),
+                    Recipe = recipe.As<RecipeWEB>(),
                     User = user.As<User>()
                 })
                 .ResultsAsync;
