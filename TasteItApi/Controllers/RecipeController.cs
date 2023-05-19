@@ -46,126 +46,166 @@ namespace TasteItApi.Controllers
         public RecipeController(IGraphClient client)
         {
             _client = client;
-
         }
 
+        //devuelve las recetas seguido del usuario que la creo
         [HttpGet("/recipe/all")]
         public async Task<ActionResult<Recipe>> GetAllRecipes()
         {
-            //devuelve las recetas seguido del usuario que la creo
-            var result = await _client.Cypher
-                .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                .Where("recipe.active = true")
-                .Return((recipe, user) => new
-                {
-                    RecipeId = recipe.Id(),
-                    Recipe = recipe.As<Recipe>(),
-                    User = user.As<User>()
-                })
-                .OrderBy("recipe.dateCreated desc")
+            try
+            {
+                var query = await _client.Cypher
+                    .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                    .Where("recipe.active = true")
+                    .Return((recipe, user) => new
+                    {
+                        RecipeId = recipe.Id(),
+                        Recipe = recipe.As<Recipe>(),
+                        User = user.As<User>()
+                    })
+                    .OrderBy("recipe.dateCreated desc")
                 .ResultsAsync;
 
-            var results = result.ToList();
+                var results = query.ToList();
 
-            //if (results.Count == 0)
-            //{
-            //    return NotFound();
-            //}
+                if (results.Count == 0)
+                {
+                    return NotFound();
+                }
 
-            return Ok(results);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
+            
         }
 
-
+        //devuelve las recetas seguido del usuario que la creo con paginacion
         [HttpGet("/recipe/all/{skipper:int}")]
         public async Task<ActionResult<Recipe>> GetAllRecipesWithSkipper(int skipper)
         {
-            //devuelve las recetas seguido del usuario que la creo
+            try
+            {
+                var query = await _client.Cypher
+                    .Match("(recipe:Recipe)-[:Created]-(user:User)")
+                    .Where("recipe.active = true")
+                    .Return((recipe, user) => new
+                    {
+                        RecipeId = recipe.Id(),
+                        Recipe = recipe.As<Recipe>(),
+                        User = user.As<User>()
+                    })
+                    .OrderBy("recipe.dateCreated desc")
+                    .Skip(skipper)
+                    .Limit(10)
+                .ResultsAsync;
+
+                var results = query.ToList();
+
+                if(results.Count == 0)
+                {
+                    return NotFound();
+                }
+
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        //devuelve la receta filtrando por id seguido del usuario que la creo
+        [HttpGet("/recipe/{id:int}")]
+        public async Task<ActionResult<Recipe>> GetRecipeById(int id)
+        {
+            try
+            {
+                var query = await _client.Cypher
+                   .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                   .Where("ID(recipe) = " + id)
+                   .AndWhere("recipe.active = true")
+                   .Return((recipe, user) => new
+                   {
+                       RecipeId = recipe.Id(),
+                       Recipe = recipe.As<Recipe>(),
+                       User = user.As<User>()
+                   })
+               .ResultsAsync;
+
+                var results = query.ToList();
+
+                if( results.Count == 0)
+                {
+                    return NotFound();
+                }
+
+                return Ok(results);
+
+            } catch(Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+        //devuelve un numero especifico de recetas aleatorias seguido del usuario que la creo
+        [HttpGet("/recipe/random/{limit}")]
+        public async Task<ActionResult<Recipe>> GetRandomRecipesWithLimit(int limit)
+        {
+            try
+            {
+                var query = await _client.Cypher
+                    .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                    .Where("recipe.active = true")
+                    .With("recipe, rand() as rand")
+                    .OrderBy("rand limit $limit")
+                    .Match("(user:User)-[:Created]-(recipe:Recipe)")
+                    .WithParam("limit", limit)
+                    .Return((recipe, user) => new
+                    {
+                        RecipeId = recipe.Id(),
+                        Recipe = recipe.As<RecipeWEB>(),
+                        User = user.As<User>()
+                    })
+                .ResultsAsync;
+
+                var results = query.ToList();
+
+                if(results.Count == 0)
+                {
+                    return NotFound();
+                }
+
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        //devuelve recetas filtrando por nombre seguido del usuario que la creo
+        [HttpGet("/recipe/byname/{name}/{skipper}")]
+        public async Task<ActionResult<Recipe>> GetRecipeByName(string name, int skipper)
+        {
+
             var result = await _client.Cypher
                 .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                .Where("recipe.active = true")
+                .Where("toLower(recipe.name) CONTAINS toLower($name)")
+                .AndWhere("recipe.active = true")
+                .WithParam("name", name)
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
                     Recipe = recipe.As<Recipe>(),
                     User = user.As<User>()
+
                 })
                 .OrderBy("recipe.dateCreated desc")
                 .Skip(skipper)
                 .Limit(10)
-                .ResultsAsync;
-
-            var results = result.ToList();
-
-            return Ok(results);
-        }
-
-        [HttpGet("/recipe/{id:int}")]
-        public async Task<ActionResult<Recipe>> GetRecipeById(int id)
-        {
-            //devuelve las recetas seguido del usuario que la creo
-            var result = await _client.Cypher
-                .Match("(user:User)-[:Created]-(recipe:Recipe)")
-                .Where("ID(recipe) = " + id)
-                .AndWhere("recipe.active = true")
-                .Return((recipe, user) => new
-                {
-                    RecipeId = recipe.Id(),
-                    Recipe = recipe.As<Recipe>(),
-                    User = user.As<User>()
-                })
-                .ResultsAsync;
-
-            //var results = result.ToList();
-
-            return Ok(result);
-        }
-
-        [HttpGet("/recipe/random/{limit}")]
-        public async Task<ActionResult<Recipe>> GetRandomRecipesWithLimit(int limit)
-        {
-
-            //devuelve un numero aleatorio de recetas seguido del usuario que la creo
-            var result = await _client.Cypher
-                .Match("(user:User)-[:Created]-(recipe:Recipe)")
-                .Where("recipe.active = true")
-                .With("recipe, rand() as rand")
-                .OrderBy("rand limit $limit")
-                .Match("(user:User)-[:Created]-(recipe:Recipe)")
-                .WithParam("limit", limit)
-                .Return((recipe, user) => new
-                {
-                    RecipeId = recipe.Id(),
-                    Recipe = recipe.As<RecipeWEB>(),
-                    User = user.As<User>()
-                })
-                .ResultsAsync;
-
-            var results = result.ToList();
-
-            return Ok(results);
-        }
-
-
-        [HttpGet("/recipe/byname/{name}/{skipper}")]
-        public async Task<ActionResult<Recipe>> GetRecipeByName(string name, int skipper)
-        {
-            //devuelve recetas filtrando por nombre seguido del usuario que la creo
-            var result = await _client.Cypher
-                            .Match("(recipe:Recipe)-[:Created]-(user:User)")
-                            .Where("toLower(recipe.name) CONTAINS toLower($name)")
-                            .AndWhere("recipe.active = true")
-                            .WithParam("name", name)
-                            .Return((recipe, user) => new
-                            {
-                                RecipeId = recipe.Id(),
-                                Recipe = recipe.As<Recipe>(),
-                                User = user.As<User>()
-
-                            })
-                            .OrderBy("recipe.dateCreated desc")
-                            .Skip(skipper)
-                            .Limit(10)
-                            .ResultsAsync;
+            .ResultsAsync;
 
             var recipe = result.ToList();
 
@@ -838,62 +878,6 @@ namespace TasteItApi.Controllers
             }
         }
 
-
-
-
-
-            ////BETA - IA
-            //[AllowAnonymous]
-            //[HttpGet("/recipe/generate_recipe")]
-            //public async Task<string> GetDavinciResponse(string prompt)
-            //{
-            //    var url = "https://api.openai.com/v1/engines/text-davinci-003/completions";
-
-            //    var api_key = "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";
-
-            //    using var client = new HttpClient();
-            //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", api_key);
-            //    client.DefaultRequestHeaders.Accept.Clear();
-            //    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            //    var requestBody = new
-            //    {
-            //        prompt = "hola",
-            //        max_tokens = 50,
-            //        n = 1,
-            //        temperature = 1,
-            //        stop = "\n"
-            //    };
-
-            //    var response = await client.PostAsync(url, new StringContent(JsonSerializer.Serialize(requestBody)));
-
-            //    if (response.IsSuccessStatusCode)
-            //    {
-            //        var content = await response.Content.ReadAsStringAsync();
-            //        var result = JsonSerializer.Deserialize<OpenAIResult>(content);
-            //        return result.choices[0].text;
-            //    }
-            //    else
-            //    {
-            //        return $"Error: {response.ReasonPhrase}";
-            //    }
-            //}
-
-            //class OpenAIResult
-            //{
-            //    public OpenAIChoice[] choices { get; set; }
-            //}
-
-            //class OpenAIChoice
-            //{
-            //    public string text { get; set; }
-            //    public double logprobs { get; set; }
-            //    public int finish_reason { get; set; }
-            //}
-
-        }
-
-
-
-
     }
+
+}

@@ -32,7 +32,7 @@ namespace TasteItApi
             services.AddCors(); //cors
 
             //jwt token con firebase
-            
+  
             services.AddSingleton(FirebaseApp.Create(new AppOptions()
             {
                 Credential = GoogleCredential.FromFile("firebase-config.json")
