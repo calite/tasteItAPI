@@ -48,7 +48,7 @@ namespace TasteItApi.Controllers
                     return Ok(results.ToList());
                 }else
                 {
-                    return NotFound();
+                    return NotFound(results);
                 }
             }
             catch(Exception ex)
@@ -81,7 +81,7 @@ namespace TasteItApi.Controllers
                     return Ok(results);
                 } else
                 {
-                    return NotFound();
+                    return NotFound(results);
                 } 
             }
             catch(Exception ex)
@@ -113,7 +113,7 @@ namespace TasteItApi.Controllers
                     return Ok(results);
                 } else
                 {
-                    return NotFound();
+                    return NotFound(results);
                 }
             }
             catch (Exception ex)
@@ -122,6 +122,7 @@ namespace TasteItApi.Controllers
             }
         }
 
+        //devuelve los reports de una receta
         [HttpGet("/admin/reports-recipe/{id:int}")]
         public async Task<ActionResult<Recipe>> GetReportsOnRecipe(int id)
         {
@@ -144,7 +145,7 @@ namespace TasteItApi.Controllers
                     return Ok(results);
                 } else
                 {
-                    return NotFound();
+                    return NotFound(results);
                 }
             }
             catch (Exception ex)
