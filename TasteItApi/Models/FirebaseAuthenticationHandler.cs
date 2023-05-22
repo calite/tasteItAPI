@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
-namespace TasteItApi.authentication
+namespace TasteItApi.Models
 {
     public class FirebaseAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {

@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using Neo4jClient;
 using TasteItApi.authentication;
-using TasteItApi.authentication.extensions;
 
 namespace TasteItApi
 {

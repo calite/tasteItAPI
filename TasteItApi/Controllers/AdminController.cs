@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Neo4j.Driver;
 using Neo4jClient;
 using Neo4jClient.Extensions;
 using TasteItApi.Models;
@@ -124,7 +125,7 @@ namespace TasteItApi.Controllers
 
         //devuelve los reports de una receta
         [HttpGet("/admin/reports-recipe/{id:int}")]
-        public async Task<ActionResult<Recipe>> GetReportsOnRecipe(int id)
+        public async Task<ActionResult> GetReportsOnRecipe(int id)
         {
             try
             {
@@ -153,6 +154,35 @@ namespace TasteItApi.Controllers
                 return BadRequest();
             }
         }
+        /*
+        //buscador
+        [AllowAnonymous]
+        [HttpGet("/admin/recipe/search")]
+        public async Task<ActionResult> GetRecipesFiltered(string? nameRecipe, string? creatorRecipe, bool? active)
+        {
+            var result = await _client.Cypher
+                .Match("(recipe:Recipe)-[:Created]-(u1:User)")
+                .OptionalMatch("(recipe)-[report:Reported]-(u2:User)")
+                .Where("($nameRecipe IS NULL OR toLower(recipe.name) CONTAINS toLower($nameRecipe))")
+                .AndWhere("($creatorRecipe IS NULL OR u1.username = $creatorRecipe)")
+                .AndWhere("$active IS NULL OR recipe.active = $active")
+                .WithParam("nameRecipe", nameRecipe)
+                .WithParam("creatorRecipe", creatorRecipe)
+                .WithParam("active", active)
+                .Return((recipe, u1) => new
+                {
+                    RecipeId = recipe.Id(),
+                    Recipe = recipe.As<RecipeWEB>(),
+                    User = u1.As<User>()
+                })
+                .OrderBy("recipe.dateCreated desc")
+            .ResultsAsync;
+
+            var recipes = result.ToList();
+
+            return Ok(recipes);
+        }
+        */
 
     }
 }

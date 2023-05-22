@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
+using TasteItApi.Models;
 
-namespace TasteItApi.authentication.extensions
+namespace TasteItApi.authentication
 {
     public static class AddFirebaseAuthenticationExtensions
     {

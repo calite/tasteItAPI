@@ -29,18 +29,21 @@ namespace TasteItApi.Controllers
         //DOC: https://github.com/DotNet4Neo4j/Neo4jClient/wiki
 
         // Diccionario de palabras más usadas en las recetas
-        string[] commonWords = new string[] {
-                    "sal", "azucar", "aceite", "cebolla",
-                    "ajo", "tomate", "pollo", "carne", "pescado",
-                    "arroz", "pasta", "huevo", "leche", "harina",
-                    "pan", "queso", "mayonesa", "mostaza", "vinagre",
-                    "limon", "naranja", "manzana", "platano", "fresa",
-                    "chocolate", "vainilla", "canela", "nuez", "mantequilla",
-                    "crema", "almendra", "cacahuete", "mermelada", "miel",
-                    "jengibre", "curry", "pimienta", "salvia", "romero",
-                    "oregano", "laurel", "tomillo", "perejil", "cilantro",
-                    "menta", "albahaca", "salsa", "sopa", "ensalada",
-                    "guiso", "horneado", "frito", "asado", "cocido", "microondas" };
+        string[] commonWords = new string[] 
+            {
+                "sal", "azucar", "aceite", "cebolla",
+                "ajo", "tomate", "pollo", "carne", "pescado",
+                "arroz", "pasta", "huevo", "leche", "harina",
+                "pan", "queso", "mayonesa", "mostaza", "vinagre",
+                "limon", "naranja", "manzana", "platano", "fresa",
+                "chocolate", "vainilla", "canela", "nuez", "mantequilla",
+                "crema", "almendra", "cacahuete", "mermelada", "miel",
+                "jengibre", "curry", "pimienta", "salvia", "romero",
+                "oregano", "laurel", "tomillo", "perejil", "cilantro",
+                "menta", "albahaca", "salsa", "sopa", "ensalada",
+                "guiso", "horneado", "frito", "asado", "cocido", "microondas", 
+                "pastel", "tarta", "fruta", "yogurt", "aguacate", "sopa"
+            };
 
 
         public RecipeController(IGraphClient client)
@@ -764,6 +767,7 @@ namespace TasteItApi.Controllers
 
             return Ok(result);
         }
+
         //buscador
         [HttpGet("/recipe/search")]
         public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating, string? ingredients, string? tags)

@@ -1,4 +1,4 @@
-﻿namespace TasteItApi.authentication.models
+﻿namespace TasteItApi.Models
 {
     public class FirebaseUser
     {

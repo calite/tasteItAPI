@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
-using TasteItApi.authentication.models;
+using TasteItApi.Models;
 
-namespace TasteItApi.authentication.extensions
+namespace TasteItApi.authentication
 {
     public static class GetFirebaseUserHttpContextExtensions
     {
