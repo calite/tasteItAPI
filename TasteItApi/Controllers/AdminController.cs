@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using Neo4j.Driver;
 using Neo4jClient;
 using Neo4jClient.Extensions;
+using TasteItApi.authentication;
 using TasteItApi.Models;
 using TasteItApi.Requests;
 
 namespace TasteItApi.Controllers
 {
     [Authorize]
+    //[AuthByProfile(new string[] { "101" })]
     [ApiController]
     [Route("controller")]
     public class AdminController : Controller
@@ -22,7 +24,7 @@ namespace TasteItApi.Controllers
         }
 
         //devuelve todas las recetas seguido del creador y el numero de reports que tienen
-        [HttpGet("/admin/recipes/all/{skipper:int}")]
+        [HttpGet("/admin/recipes/all/{skipper}")]
         public async Task<ActionResult<List<object>>> GetRecipesReported(int skipper)
         {
             try
@@ -154,35 +156,6 @@ namespace TasteItApi.Controllers
                 return BadRequest();
             }
         }
-        /*
-        //buscador
-        [AllowAnonymous]
-        [HttpGet("/admin/recipe/search")]
-        public async Task<ActionResult> GetRecipesFiltered(string? nameRecipe, string? creatorRecipe, bool? active)
-        {
-            var result = await _client.Cypher
-                .Match("(recipe:Recipe)-[:Created]-(u1:User)")
-                .OptionalMatch("(recipe)-[report:Reported]-(u2:User)")
-                .Where("($nameRecipe IS NULL OR toLower(recipe.name) CONTAINS toLower($nameRecipe))")
-                .AndWhere("($creatorRecipe IS NULL OR u1.username = $creatorRecipe)")
-                .AndWhere("$active IS NULL OR recipe.active = $active")
-                .WithParam("nameRecipe", nameRecipe)
-                .WithParam("creatorRecipe", creatorRecipe)
-                .WithParam("active", active)
-                .Return((recipe, u1) => new
-                {
-                    RecipeId = recipe.Id(),
-                    Recipe = recipe.As<RecipeWEB>(),
-                    User = u1.As<User>()
-                })
-                .OrderBy("recipe.dateCreated desc")
-            .ResultsAsync;
-
-            var recipes = result.ToList();
-
-            return Ok(recipes);
-        }
-        */
 
     }
 }

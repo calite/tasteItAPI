@@ -2,6 +2,7 @@
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using Neo4jClient;
 using TasteItApi.authentication;
@@ -42,6 +43,12 @@ namespace TasteItApi
             var client = new BoltGraphClient(new Uri("neo4j+s://dc95b24b.databases.neo4j.io"), "neo4j", "sBQ6Fj2oXaFltjizpmTDhyEO9GDiqGM1rG-zelf17kg");
             client.ConnectAsync();
             services.AddSingleton<IGraphClient>(client);
+
+            services.AddAuthorization(opciones => //autorizacion para admin
+            {
+                opciones.AddPolicy("profile", politica => politica.RequireClaim("profile"));
+            });
+
 
         }
 
