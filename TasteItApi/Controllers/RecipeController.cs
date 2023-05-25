@@ -53,7 +53,7 @@ namespace TasteItApi.Controllers
 
         //devuelve las recetas seguido del usuario que la creo
         [HttpGet("/recipe/all")]
-        public async Task<ActionResult<Recipe>> GetAllRecipes()
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetAllRecipes()
         {
             try
             {

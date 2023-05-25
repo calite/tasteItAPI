@@ -46,13 +46,8 @@ namespace TasteItApi.Controllers
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results.ToList());
-                }else
-                {
-                    return NotFound(results);
-                }
+                return Ok(results.ToList());
+
             }
             catch(Exception ex)
             {
@@ -79,13 +74,7 @@ namespace TasteItApi.Controllers
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results);
-                } else
-                {
-                    return NotFound(results);
-                } 
+                return Ok(results); 
             }
             catch(Exception ex)
             {
@@ -111,13 +100,7 @@ namespace TasteItApi.Controllers
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results);
-                } else
-                {
-                    return NotFound(results);
-                }
+                return Ok(results);
             }
             catch (Exception ex)
             {
@@ -143,13 +126,7 @@ namespace TasteItApi.Controllers
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results);
-                } else
-                {
-                    return NotFound(results);
-                }
+                return Ok(results);
             }
             catch (Exception ex)
             {
