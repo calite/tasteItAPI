@@ -39,7 +39,7 @@ namespace TasteItApi.Controllers
                         creator = u1.As<User>(),
                         reportsCount = report.Count()
                     })
-                    .OrderByDescending("recipe.dateCreated")
+                    .OrderBy("count(report) desc")
                     .Skip(skipper)
                     .Limit(20)
                 .ResultsAsync;

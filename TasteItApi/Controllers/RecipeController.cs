@@ -770,7 +770,7 @@ namespace TasteItApi.Controllers
 
         //buscador
         [HttpGet("/recipe/search")]
-        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating, string? ingredients, string? tags)
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating, string? ingredients, string? tags, int skipper)
         {
             List<string> listIng = new List<string>();
             List<string> listTags = new List<string>();
