@@ -434,11 +434,12 @@ namespace TasteItApi.Controllers
         }
 
         //COMMENTARIO EN LA RECETA
+        [AllowAnonymous]
         [HttpPost("/recipe/comment_recipe")]
         public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest request)
         {
             DateTime today = DateTime.Now;
-
+            
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
                 .Where("ID(recipe) = $rid")
@@ -457,7 +458,7 @@ namespace TasteItApi.Controllers
                     cmt = cmt.As<Comment>()
                 })
                 .ResultsAsync;
-
+            
             await updateRatingRecipeAsync(request.rid);
 
             return Ok();
@@ -468,25 +469,38 @@ namespace TasteItApi.Controllers
         {
             var total = 0.0;
 
-            var result = await _client.Cypher
+            var query = await _client.Cypher
                 .Match("(recipe:Recipe)-[c:Commented]-(u:User)")
                 .Where("ID(recipe) = $rid")
                 .WithParam("rid", recipeId)
-                .Return((c) => new
+                .Return((c,u) => new
                 {
-                    c = c.As<Comment>()
+                    user = u.As<User>(),
+                    comment = c.As<Comment>()
                 })
+                .OrderBy("u.token, c.dateCreated asc")
             .ResultsAsync;
 
-            var results = result.ToList();
+            var results = query.ToList();
 
-            foreach (var comment in results)
+            var comments = new Dictionary<string,double>();
+
+            
+
+            foreach(var result in results)
             {
-                total += comment.c.rating;
+                if(!comments.ContainsKey(result.user.token))
+                comments.Add(result.user.token, result.comment.rating);
             }
 
-            total = total / results.Count;
+            foreach (var comment in comments)
+            {
+                total += comment.Value;
+            }
 
+            total = total / comments.Count;
+
+            
             await _client.Cypher
                 .Match("(r:Recipe)")
                 .Where("ID(r)= $rid")
@@ -494,6 +508,7 @@ namespace TasteItApi.Controllers
                 .WithParam("rid", recipeId)
                 .WithParam("total", total)
             .ExecuteWithoutResultsAsync();
+            
         }
 
         //REPORTAR UNA RECETA
