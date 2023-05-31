@@ -434,7 +434,6 @@ namespace TasteItApi.Controllers
         }
 
         //COMMENTARIO EN LA RECETA
-        [AllowAnonymous]
         [HttpPost("/recipe/comment_recipe")]
         public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest request)
         {

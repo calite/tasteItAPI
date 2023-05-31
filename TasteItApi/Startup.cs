@@ -40,7 +40,7 @@ namespace TasteItApi
             services.AddFirebaseAuthentication();
             
             //NEO
-            var client = new BoltGraphClient(new Uri("neo4j+s://dc95b24b.databases.neo4j.io"), "neo4j", "sBQ6Fj2oXaFltjizpmTDhyEO9GDiqGM1rG-zelf17kg");
+            var client = new BoltGraphClient(new Uri(Configuration["url"]), "neo4j", Configuration["pass"]);
             client.ConnectAsync();
             services.AddSingleton<IGraphClient>(client);
 
