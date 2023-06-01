@@ -144,6 +144,7 @@ namespace TasteItApi.Controllers
                 var query = await _client.Cypher
                     .Match("(u:User)-[l:Liked]->(r:Recipe)-[c:Created]->(u2:User) ")
                     .Where("u.token = $token")
+                    .AndWhere("r.active = true")
                     .WithParam("token", token)
                     .Return((r, u2) => new
                     {
@@ -176,6 +177,7 @@ namespace TasteItApi.Controllers
                     .Match("(u1:User)-[f:Following]->(u2:User)")
                     .Where("u1.token = $token")
                     .Match("(r:Recipe)-[c:Created]->(u2)")
+                    .Where("r.active = true")
                     .WithParam("token", token)
                     .Return((r, u2) => new
                     {
@@ -421,6 +423,7 @@ namespace TasteItApi.Controllers
                 var query = await _client.Cypher
                     .Match("(u:User)-[count:Created]-(r:Recipe)")
                     .Where("u.token = $token")
+                    .AndWhere("r.active = true")
                     .WithParam("token", token)
                     .Return(count => count.Count())
                 .ResultsAsync;
@@ -477,6 +480,7 @@ namespace TasteItApi.Controllers
                 var result = await _client.Cypher
                     .Match("(u:User)-[count:Liked]->(r:Recipe)")
                     .Where("u.token = $token")
+                    .AndWhere("r.active = true")
                     .WithParam("token", token)
                     .Return(r => r.Count())
                 .ResultsAsync;

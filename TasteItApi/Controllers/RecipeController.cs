@@ -484,8 +484,6 @@ namespace TasteItApi.Controllers
 
             var comments = new Dictionary<string,double>();
 
-            
-
             foreach(var result in results)
             {
                 if(!comments.ContainsKey(result.user.token))
@@ -498,8 +496,7 @@ namespace TasteItApi.Controllers
             }
 
             total = total / comments.Count;
-
-            
+  
             await _client.Cypher
                 .Match("(r:Recipe)")
                 .Where("ID(r)= $rid")
@@ -757,7 +754,6 @@ namespace TasteItApi.Controllers
         [HttpPost("/recipe/delete")]
         public async Task<IActionResult> PostDeleteRecipe([FromBody] DeleteRecipeRequest request)
         {
-
             await _client.Cypher
                 .Match("(r:Recipe)")
                 .Where("ID(r) = $recipeId")
