@@ -24,8 +24,8 @@ namespace TasteItApi.Controllers
         }
 
         //devuelve todas las recetas seguido del creador y el numero de reports que tienen
-        [HttpGet("/admin/recipes/all/{skipper}")]
-        public async Task<ActionResult<List<object>>> GetRecipesReported(int skipper)
+        [HttpGet("/admin/recipes/all")]
+        public async Task<ActionResult<List<object>>> GetRecipesReported()
         {
             try
             {
@@ -40,8 +40,6 @@ namespace TasteItApi.Controllers
                         reportsCount = report.Count()
                     })
                     .OrderBy("count(report) desc")
-                    .Skip(skipper)
-                    .Limit(20)
                 .ResultsAsync;
 
                 var results = query.ToList();
