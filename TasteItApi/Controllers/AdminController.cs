@@ -53,6 +53,41 @@ namespace TasteItApi.Controllers
             }
         }
 
+        //filtro
+        [HttpGet("/admin/recipes/filter")]
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesReportedFiltered(string? name, string? creator, bool? active)
+        {
+            try
+            {
+                var result = await _client.Cypher
+                .Match("(recipe:Recipe)-[:Created]-(u1:User)")
+                .Where("($name IS NULL OR toLower(recipe.name) CONTAINS toLower($name))")
+                .AndWhere("($creator IS NULL OR toLower(u1.username) CONTAINS toLower($creator))")
+                .AndWhere("($active IS NULL OR recipe.active = $active)")
+                .OptionalMatch("(recipe)-[report:Reported]-(u2:User)")
+                .WithParam("name", name)
+                .WithParam("creator", creator)
+                .WithParam("active", active)
+                 .Return((recipe, u1, report) => new
+                 {
+                     recipeId = recipe.Id(),
+                     recipe = recipe.As<RecipeWEB>(),
+                     creator = u1.As<User>(),
+                     reportsCount = report.Count()
+                 })
+                .OrderBy("count(report) desc")
+                .ResultsAsync;
+
+                var recipes = result.ToList();
+
+                return Ok(recipes);
+
+            } catch(Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+
         //devuelve una receta especifica a partir de un ID
         [HttpGet("/admin/recipe/{id:int}")]
         public async Task<ActionResult<Recipe>> GetRecipeReportedById(int id)

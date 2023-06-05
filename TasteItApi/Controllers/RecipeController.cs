@@ -780,10 +780,12 @@ namespace TasteItApi.Controllers
 
         //buscador
         [HttpGet("/recipe/search")]
-        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating, string? ingredients, string? tags)
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, float? rating, string? ingredients, string? tags)
         {
             List<string> listIng = new List<string>();
             List<string> listTags = new List<string>();
+            double lowestRating = 0.0;
+            double highestRating = 0.0;
 
             if (ingredients != null)
             {
@@ -795,18 +797,26 @@ namespace TasteItApi.Controllers
                 listTags = tags.Replace(" ", "").Split(",").ToList();
             }
 
+            if(rating != null)
+            {
+                lowestRating = Math.Floor((float)rating);
+                highestRating = lowestRating + 0.9;
+            }
+
             var result = await _client.Cypher
                 .Match("(recipe:Recipe)-[c:Created]-(user:User)")
                 .Where("($name IS NULL OR toLower(recipe.name) CONTAINS toLower($name))")
                 .AndWhere("($country IS NULL OR toLower(recipe.country) CONTAINS toLower($country))")
                 .AndWhere("($difficulty IS NULL OR recipe.difficulty = $difficulty)")
-                .AndWhere("($rating IS NULL OR recipe.rating = $rating)")
+                .AndWhere("($rating IS NULL OR (recipe.rating >= $lowestRating AND recipe.rating <= $highestRating))")
                 .AndWhere("ALL(tag IN $tags WHERE tag IN recipe.tags)")
                 .AndWhere("recipe.active = true")
                 .WithParam("name", name)
                 .WithParam("country", country)
                 .WithParam("difficulty", difficulty)
                 .WithParam("rating", rating)
+                .WithParam("lowestRating", lowestRating)
+                .WithParam("highestRating", highestRating)
                 .WithParam("tags", listTags)
                 .Return((recipe, user) => new
                 {
