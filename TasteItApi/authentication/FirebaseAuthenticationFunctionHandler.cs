@@ -3,8 +3,9 @@ using FirebaseAdmin;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
+using TasteItApi.Models;
 
-namespace TasteItApi.Models
+namespace TasteItApi.authentication
 {
     public class FirebaseAuthenticationFunctionHandler
     {

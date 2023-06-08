@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
-using TasteItApi.Models;
 
 namespace TasteItApi.authentication
 {
