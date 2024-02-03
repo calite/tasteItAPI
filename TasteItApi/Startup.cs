@@ -2,10 +2,10 @@
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using Neo4jClient;
 using TasteItApi.authentication;
-using TasteItApi.authentication.extensions;
 
 namespace TasteItApi
 {
@@ -40,10 +40,20 @@ namespace TasteItApi
             services.AddFirebaseAuthentication();
 
             //NEO
+<<<<<<< HEAD
             //var client = new BoltGraphClient(new Uri("neo4j+s://dc95b24b.databases.neo4j.io"), "neo4j", "sBQ6Fj2oXaFltjizpmTDhyEO9GDiqGM1rG-zelf17kg");
             var client = new BoltGraphClient(new Uri("neo4j+s://102356e3.databases.neo4j.io"), "neo4j", "YSuwlPSExYwct5r7StSu9gSNDKW9hPm8hhjXu4fXWpE");
+=======
+            var client = new BoltGraphClient(new Uri(Configuration["url"]), "neo4j", Configuration["pass"]);
+>>>>>>> ddf41e217440f091c73ab354988dfb767be30e19
             client.ConnectAsync();
             services.AddSingleton<IGraphClient>(client);
+
+            services.AddAuthorization(opciones => //autorizacion para admin
+            {
+                opciones.AddPolicy("profile", politica => politica.RequireClaim("profile"));
+            });
+
 
         }
 

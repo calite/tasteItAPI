@@ -1,14 +1,17 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Neo4j.Driver;
 using Neo4jClient;
 using Neo4jClient.Extensions;
+using TasteItApi.authentication;
 using TasteItApi.Models;
 using TasteItApi.Requests;
 
 namespace TasteItApi.Controllers
 {
     [Authorize]
+    //[AuthByProfile(new string[] { "101" })]
     [ApiController]
     [Route("controller")]
     public class AdminController : Controller
@@ -21,8 +24,8 @@ namespace TasteItApi.Controllers
         }
 
         //devuelve todas las recetas seguido del creador y el numero de reports que tienen
-        [HttpGet("/admin/recipes/all/{skipper:int}")]
-        public async Task<ActionResult<List<object>>> GetRecipesReported(int skipper)
+        [HttpGet("/admin/recipes/all")]
+        public async Task<ActionResult<List<object>>> GetRecipesReported()
         {
             try
             {
@@ -36,24 +39,52 @@ namespace TasteItApi.Controllers
                         creator = u1.As<User>(),
                         reportsCount = report.Count()
                     })
-                    .OrderByDescending("recipe.dateCreated")
-                    .Skip(skipper)
-                    .Limit(20)
+                    .OrderBy("count(report) desc")
                 .ResultsAsync;
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results.ToList());
-                }else
-                {
-                    return NotFound(results);
-                }
+                return Ok(results.ToList());
+
             }
             catch(Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        //filtro
+        [HttpGet("/admin/recipes/filter")]
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesReportedFiltered(string? name, string? creator, bool? active)
+        {
+            try
+            {
+                var result = await _client.Cypher
+                .Match("(recipe:Recipe)-[:Created]-(u1:User)")
+                .Where("($name IS NULL OR toLower(recipe.name) CONTAINS toLower($name))")
+                .AndWhere("($creator IS NULL OR toLower(u1.username) CONTAINS toLower($creator))")
+                .AndWhere("($active IS NULL OR recipe.active = $active)")
+                .OptionalMatch("(recipe)-[report:Reported]-(u2:User)")
+                .WithParam("name", name)
+                .WithParam("creator", creator)
+                .WithParam("active", active)
+                 .Return((recipe, u1, report) => new
+                 {
+                     recipeId = recipe.Id(),
+                     recipe = recipe.As<RecipeWEB>(),
+                     creator = u1.As<User>(),
+                     reportsCount = report.Count()
+                 })
+                .OrderBy("count(report) desc")
+                .ResultsAsync;
+
+                var recipes = result.ToList();
+
+                return Ok(recipes);
+
+            } catch(Exception ex)
+            {
+                return BadRequest(ex);
             }
         }
 
@@ -76,13 +107,7 @@ namespace TasteItApi.Controllers
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results);
-                } else
-                {
-                    return NotFound(results);
-                } 
+                return Ok(results); 
             }
             catch(Exception ex)
             {
@@ -108,13 +133,7 @@ namespace TasteItApi.Controllers
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results);
-                } else
-                {
-                    return NotFound(results);
-                }
+                return Ok(results);
             }
             catch (Exception ex)
             {
@@ -124,7 +143,7 @@ namespace TasteItApi.Controllers
 
         //devuelve los reports de una receta
         [HttpGet("/admin/reports-recipe/{id:int}")]
-        public async Task<ActionResult<Recipe>> GetReportsOnRecipe(int id)
+        public async Task<ActionResult> GetReportsOnRecipe(int id)
         {
             try
             {
@@ -140,13 +159,7 @@ namespace TasteItApi.Controllers
 
                 var results = query.ToList();
 
-                if(results.Count > 0)
-                {
-                    return Ok(results);
-                } else
-                {
-                    return NotFound(results);
-                }
+                return Ok(results);
             }
             catch (Exception ex)
             {

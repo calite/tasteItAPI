@@ -29,18 +29,21 @@ namespace TasteItApi.Controllers
         //DOC: https://github.com/DotNet4Neo4j/Neo4jClient/wiki
 
         // Diccionario de palabras más usadas en las recetas
-        string[] commonWords = new string[] {
-                    "sal", "azucar", "aceite", "cebolla",
-                    "ajo", "tomate", "pollo", "carne", "pescado",
-                    "arroz", "pasta", "huevo", "leche", "harina",
-                    "pan", "queso", "mayonesa", "mostaza", "vinagre",
-                    "limon", "naranja", "manzana", "platano", "fresa",
-                    "chocolate", "vainilla", "canela", "nuez", "mantequilla",
-                    "crema", "almendra", "cacahuete", "mermelada", "miel",
-                    "jengibre", "curry", "pimienta", "salvia", "romero",
-                    "oregano", "laurel", "tomillo", "perejil", "cilantro",
-                    "menta", "albahaca", "salsa", "sopa", "ensalada",
-                    "guiso", "horneado", "frito", "asado", "cocido", "microondas" };
+        string[] commonWords = new string[] 
+            {
+                "sal", "azucar", "aceite", "cebolla",
+                "ajo", "tomate", "pollo", "carne", "pescado",
+                "arroz", "pasta", "huevo", "leche", "harina",
+                "pan", "queso", "mayonesa", "mostaza", "vinagre",
+                "limon", "naranja", "manzana", "platano", "fresa",
+                "chocolate", "vainilla", "canela", "nuez", "mantequilla",
+                "crema", "almendra", "cacahuete", "mermelada", "miel",
+                "jengibre", "curry", "pimienta", "salvia", "romero",
+                "oregano", "laurel", "tomillo", "perejil", "cilantro",
+                "menta", "albahaca", "salsa", "sopa", "ensalada",
+                "guiso", "horneado", "frito", "asado", "cocido", "microondas", 
+                "pastel", "tarta", "fruta", "yogurt", "aguacate", "sopa"
+            };
 
 
         public RecipeController(IGraphClient client)
@@ -50,7 +53,7 @@ namespace TasteItApi.Controllers
 
         //devuelve las recetas seguido del usuario que la creo
         [HttpGet("/recipe/all")]
-        public async Task<ActionResult<Recipe>> GetAllRecipes()
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetAllRecipes()
         {
             try
             {
@@ -435,7 +438,7 @@ namespace TasteItApi.Controllers
         public async Task<IActionResult> PostCommentRecipe([FromBody] CommentRecipeRequest request)
         {
             DateTime today = DateTime.Now;
-
+            
             var result = await _client.Cypher
                 .Match("(user:User),(recipe:Recipe)")
                 .Where("ID(recipe) = $rid")
@@ -454,7 +457,7 @@ namespace TasteItApi.Controllers
                     cmt = cmt.As<Comment>()
                 })
                 .ResultsAsync;
-
+            
             await updateRatingRecipeAsync(request.rid);
 
             return Ok();
@@ -465,25 +468,35 @@ namespace TasteItApi.Controllers
         {
             var total = 0.0;
 
-            var result = await _client.Cypher
+            var query = await _client.Cypher
                 .Match("(recipe:Recipe)-[c:Commented]-(u:User)")
                 .Where("ID(recipe) = $rid")
                 .WithParam("rid", recipeId)
-                .Return((c) => new
+                .Return((c,u) => new
                 {
-                    c = c.As<Comment>()
+                    user = u.As<User>(),
+                    comment = c.As<Comment>()
                 })
+                .OrderBy("u.token, c.dateCreated asc")
             .ResultsAsync;
 
-            var results = result.ToList();
+            var results = query.ToList();
 
-            foreach (var comment in results)
+            var comments = new Dictionary<string,double>();
+
+            foreach(var result in results)
             {
-                total += comment.c.rating;
+                if(!comments.ContainsKey(result.user.token))
+                comments.Add(result.user.token, result.comment.rating);
             }
 
-            total = total / results.Count;
+            foreach (var comment in comments)
+            {
+                total += comment.Value;
+            }
 
+            total = total / comments.Count;
+  
             await _client.Cypher
                 .Match("(r:Recipe)")
                 .Where("ID(r)= $rid")
@@ -491,6 +504,7 @@ namespace TasteItApi.Controllers
                 .WithParam("rid", recipeId)
                 .WithParam("total", total)
             .ExecuteWithoutResultsAsync();
+            
         }
 
         //REPORTAR UNA RECETA
@@ -740,7 +754,6 @@ namespace TasteItApi.Controllers
         [HttpPost("/recipe/delete")]
         public async Task<IActionResult> PostDeleteRecipe([FromBody] DeleteRecipeRequest request)
         {
-
             await _client.Cypher
                 .Match("(r:Recipe)")
                 .Where("ID(r) = $recipeId")
@@ -764,12 +777,15 @@ namespace TasteItApi.Controllers
 
             return Ok(result);
         }
+
         //buscador
         [HttpGet("/recipe/search")]
-        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, int? rating, string? ingredients, string? tags)
+        public async Task<ActionResult<RecipeId_Recipe_User>> GetRecipesFiltered(string? name, string? country, int? difficulty, float? rating, string? ingredients, string? tags)
         {
             List<string> listIng = new List<string>();
             List<string> listTags = new List<string>();
+            double lowestRating = 0.0;
+            double highestRating = 0.0;
 
             if (ingredients != null)
             {
@@ -781,17 +797,27 @@ namespace TasteItApi.Controllers
                 listTags = tags.Replace(" ", "").Split(",").ToList();
             }
 
+            if(rating != null)
+            {
+                lowestRating = Math.Floor((float)rating);
+                highestRating = lowestRating + 0.9;
+            }
+
             var result = await _client.Cypher
                 .Match("(recipe:Recipe)-[c:Created]-(user:User)")
                 .Where("($name IS NULL OR toLower(recipe.name) CONTAINS toLower($name))")
                 .AndWhere("($country IS NULL OR toLower(recipe.country) CONTAINS toLower($country))")
                 .AndWhere("($difficulty IS NULL OR recipe.difficulty = $difficulty)")
-                .AndWhere("($rating IS NULL OR recipe.rating = $rating)")
+                .AndWhere("($rating IS NULL OR (recipe.rating >= $lowestRating AND recipe.rating <= $highestRating))")
+                .AndWhere("ALL(tag IN $tags WHERE tag IN recipe.tags)")
                 .AndWhere("recipe.active = true")
                 .WithParam("name", name)
                 .WithParam("country", country)
                 .WithParam("difficulty", difficulty)
                 .WithParam("rating", rating)
+                .WithParam("lowestRating", lowestRating)
+                .WithParam("highestRating", highestRating)
+                .WithParam("tags", listTags)
                 .Return((recipe, user) => new
                 {
                     RecipeId = recipe.Id(),
@@ -800,16 +826,18 @@ namespace TasteItApi.Controllers
                 })
                 .OrderBy("recipe.dateCreated desc")
             .ResultsAsync;
-
+            
             var recipes = result.ToList();
-
+            
             List<RecipeId_Recipe_User> listRecipesFiltered = new List<RecipeId_Recipe_User>();
 
-            if (listIng.Count > 0 && listTags.Count == 0) // Filtrar solo por ingredientes
+            if (listIng.Count > 0) // Filtrar solo por ingredientes
             {
                 for (int i = 0; i < recipes.Count; i++)
                 {
-                    bool hasMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => x.ToLower().Contains(y.ToLower())));
+                    String pepito = String.Join(" ", recipes[i].Recipe.ingredients);
+
+                    bool hasMatch = listIng.All(x => pepito.Contains(x));
 
                     if (hasMatch)
                     {
@@ -820,45 +848,11 @@ namespace TasteItApi.Controllers
                             User = recipes[i].User.As<User>()
                         });
                     }
+
                 }
             }
-            else if (listTags.Count > 0 && listIng.Count == 0) // Filtrar solo por tags
-            {
-                for (int i = 0; i < recipes.Count; i++)
-                {
-                    bool hasMatch = recipes[i].Recipe.tags.Any(x => listTags.Any(y => x.ToLower().Contains(y.ToLower())));
-
-                    if (hasMatch)
-                    {
-                        listRecipesFiltered.Add(new RecipeId_Recipe_User
-                        {
-                            RecipeId = recipes[i].RecipeId,
-                            Recipe = recipes[i].Recipe.As<Recipe>(),
-                            User = recipes[i].User.As<User>()
-                        });
-                    }
-                }
-            }
-            else if (listIng.Count > 0 && listTags.Count > 0) // Filtrar por ingredientes y tags
-            {
-                for (int i = 0; i < recipes.Count; i++)
-                {
-                    bool hasIngredientMatch = recipes[i].Recipe.ingredients.Any(x => listIng.Any(y => x.ToLower().Contains(y.ToLower())));
-                    bool hasTagMatch = recipes[i].Recipe.tags.Any(x => listTags.Any(y => x.ToLower().Contains(y.ToLower())));
-
-                    if (hasIngredientMatch && hasTagMatch)
-                    {
-                        listRecipesFiltered.Add(new RecipeId_Recipe_User
-                        {
-                            RecipeId = recipes[i].RecipeId,
-                            Recipe = recipes[i].Recipe.As<Recipe>(),
-                            User = recipes[i].User.As<User>()
-                        });
-                    }
-                }
-            }
-
-            if (listRecipesFiltered.Count > 0)
+           
+            if (listIng.Count > 0)
             {
                 return Ok(listRecipesFiltered);
             }
@@ -866,6 +860,7 @@ namespace TasteItApi.Controllers
             {
                 return Ok(recipes);
             }
+            
         }
 
     }
