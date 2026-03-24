@@ -1,11 +1,11 @@
-﻿using FirebaseAdmin;
+using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
-using Neo4jClient;
+using Neo4j.Driver;
 using TasteItApi.authentication;
+using TasteItApi.Graph.Configuration;
+using TasteItApi.Graph.Repositories;
+using TasteItApi.Graph.Services;
 
 namespace TasteItApi
 {
@@ -18,10 +18,8 @@ namespace TasteItApi
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
             services.AddControllers();
 
             services.AddSwaggerGen(c =>
@@ -29,40 +27,39 @@ namespace TasteItApi
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "TasteIt", Version = "v1" });
             });
 
-            services.AddCors(); //cors
+            services.AddCors();
 
-            //jwt token con firebase
-  
-            services.AddSingleton(FirebaseApp.Create(new AppOptions()
+            services.AddSingleton(FirebaseApp.Create(new AppOptions
             {
                 Credential = GoogleCredential.FromFile("firebase-config.json")
             }));
             services.AddFirebaseAuthentication();
 
-            //NEO
-<<<<<<< HEAD
-            //var client = new BoltGraphClient(new Uri("neo4j+s://dc95b24b.databases.neo4j.io"), "neo4j", "sBQ6Fj2oXaFltjizpmTDhyEO9GDiqGM1rG-zelf17kg");
-            var client = new BoltGraphClient(new Uri("neo4j+s://102356e3.databases.neo4j.io"), "neo4j", "YSuwlPSExYwct5r7StSu9gSNDKW9hPm8hhjXu4fXWpE");
-=======
-            var client = new BoltGraphClient(new Uri(Configuration["url"]), "neo4j", Configuration["pass"]);
->>>>>>> ddf41e217440f091c73ab354988dfb767be30e19
-            client.ConnectAsync();
-            services.AddSingleton<IGraphClient>(client);
+            var neo4jOptions = Configuration.GetSection("Neo4j").Get<Neo4jOptions>() ?? new Neo4jOptions();
+            services.Configure<Neo4jOptions>(Configuration.GetSection("Neo4j"));
 
-            services.AddAuthorization(opciones => //autorizacion para admin
+            services.AddSingleton<IDriver>(_ =>
+                GraphDatabase.Driver(
+                    neo4jOptions.Uri,
+                    AuthTokens.Basic(neo4jOptions.Username, neo4jOptions.Password),
+                    builder =>
+                    {
+                        builder.WithConnectionTimeout(TimeSpan.FromSeconds(neo4jOptions.ConnectionTimeoutSeconds));
+                        builder.WithMaxConnectionPoolSize(neo4jOptions.MaxConnectionPoolSize);
+                    }));
+
+            services.AddScoped<IRecipeGraphRepository, RecipeGraphRepository>();
+            services.AddScoped<IRecipeGraphService, RecipeGraphService>();
+
+            services.AddAuthorization(options =>
             {
-                opciones.AddPolicy("profile", politica => politica.RequireClaim("profile"));
+                options.AddPolicy("profile", policy => policy.RequireClaim("profile"));
             });
-
-
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-
-            app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); //cors
-
+            app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
             if (env.IsDevelopment())
             {

@@ -12,7 +12,7 @@
     <PackageReference Include="FirebaseAuthentication.net" Version="4.0.2" />
     <PackageReference Include="Google.Apis.Auth" Version="1.60.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.16" />
-    <PackageReference Include="Neo4jClient" Version="5.1.6" />
+    <PackageReference Include="Neo4j.Driver" Version="5.28.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
 

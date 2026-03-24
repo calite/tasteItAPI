@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\TasteItApi.props" />
-</Project>

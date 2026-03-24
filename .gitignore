@@ -1,0 +1,42 @@
+# .NET
+**/bin/
+**/obj/
+**/out/
+*.dll
+*.exe
+*.pdb
+
+# Logs and Temp
+*.log
+*.tmp
+*.temp
+logs/
+**/logs/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Docker
+.env
+.env.*
+docker-compose.override.yml
+neo4j_data/
+data/
+
+# Secrets
+firebase-config.json
+**/firebase-config.json
+appsettings.Development.json
+**/appsettings.Development.json
+appsettings.Local.json
+**/appsettings.Local.json
+*.secret.json
+**/*.secret.json
+
+# OS
+.DS_Store
+Thumbs.db
