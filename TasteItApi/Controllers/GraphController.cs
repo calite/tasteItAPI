@@ -15,6 +15,9 @@ namespace TasteItApi.Controllers
             _graphService = graphService;
         }
 
+        /// <summary>
+        /// Creates a user node in the graph.
+        /// </summary>
         [HttpPost("users")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserNodeRequest request, CancellationToken cancellationToken)
         {
@@ -22,6 +25,9 @@ namespace TasteItApi.Controllers
             return Ok(created);
         }
 
+        /// <summary>
+        /// Creates a recipe node and links it with the creator user.
+        /// </summary>
         [HttpPost("recipes")]
         public async Task<IActionResult> CreateRecipe([FromBody] CreateRecipeNodeRequest request, CancellationToken cancellationToken)
         {
@@ -35,6 +41,9 @@ namespace TasteItApi.Controllers
             return Ok(created);
         }
 
+        /// <summary>
+        /// Adds an ingredient node and links it to a recipe.
+        /// </summary>
         [HttpPost("recipes/ingredients")]
         public async Task<IActionResult> AddIngredientToRecipe([FromBody] AddIngredientToRecipeRequest request, CancellationToken cancellationToken)
         {
@@ -48,6 +57,9 @@ namespace TasteItApi.Controllers
             return Ok(ingredient);
         }
 
+        /// <summary>
+        /// Adds a LIKE relationship from a user to a recipe.
+        /// </summary>
         [HttpPost("users/{userId}/likes/{recipeId}")]
         public async Task<IActionResult> AddLikeToRecipe(string userId, string recipeId, CancellationToken cancellationToken)
         {

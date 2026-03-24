@@ -18,10 +18,14 @@ namespace TasteItApi.Controllers
             _graphService = graphService;
         }
 
+        /// <summary>
+        /// Creates a recipe for the authenticated user token.
+        /// </summary>
         [HttpPost("create")]
         public async Task<IActionResult> PostCreateRecipe([FromBody] RecipeRequest request, CancellationToken cancellationToken)
         {
             var created = await _graphService.CreateRecipeAsync(
+                id: null,
                 request.name,
                 request.description,
                 request.token,
@@ -30,6 +34,9 @@ namespace TasteItApi.Controllers
             return Ok(created);
         }
 
+        /// <summary>
+        /// Adds an ingredient to a recipe by recipe identifier.
+        /// </summary>
         [HttpPost("{recipeId}/ingredient")]
         public async Task<IActionResult> AddIngredientToRecipe(
             string recipeId,
@@ -38,14 +45,17 @@ namespace TasteItApi.Controllers
         {
             var created = await _graphService.AddIngredientToRecipeAsync(
                 recipeId,
+                request.IngredientId,
                 request.IngredientName,
                 request.IngredientType,
-                request.IngredientId,
                 cancellationToken);
 
             return Ok(created);
         }
 
+        /// <summary>
+        /// Adds a like from user token to a recipe.
+        /// </summary>
         [HttpPost("like")]
         public async Task<IActionResult> PostLikeOnRecipe([FromBody] LikeRecipeRequest request, CancellationToken cancellationToken)
         {

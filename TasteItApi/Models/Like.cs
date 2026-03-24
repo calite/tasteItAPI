@@ -1,7 +1,8 @@
-﻿namespace TasteItApi.Models
+namespace TasteItApi.Models
 {
     public class Like
     {
-        public string dateCreated { get; set; }
+        public string dateCreated { get; set; } = string.Empty;
     }
 }
+

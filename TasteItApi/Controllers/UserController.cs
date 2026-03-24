@@ -17,6 +17,9 @@ namespace TasteItApi.Controllers
             _graphService = graphService;
         }
 
+        /// <summary>
+        /// Registers a user node in the graph database.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> PostRegisterUser([FromBody] User user, CancellationToken cancellationToken)

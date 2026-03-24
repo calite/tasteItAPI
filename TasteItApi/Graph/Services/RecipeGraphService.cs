@@ -18,7 +18,8 @@ namespace TasteItApi.Graph.Services
             {
                 Id = string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N") : id,
                 Name = name.Trim(),
-                Email = email.Trim()
+                Email = email.Trim(),
+                CreatedAt = DateTime.UtcNow
             };
 
             await _repository.CreateUserAsync(user, cancellationToken);
@@ -32,7 +33,8 @@ namespace TasteItApi.Graph.Services
                 Id = string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N") : id,
                 Name = name.Trim(),
                 Description = description.Trim(),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
             await _repository.CreateRecipeAsync(recipe, createdByUserId, cancellationToken);
@@ -45,7 +47,8 @@ namespace TasteItApi.Graph.Services
             {
                 Id = string.IsNullOrWhiteSpace(ingredientId) ? Guid.NewGuid().ToString("N") : ingredientId,
                 Name = ingredientName.Trim(),
-                Type = ingredientType.Trim()
+                Type = ingredientType.Trim(),
+                NameNormalized = ingredientName.Trim().ToLowerInvariant()
             };
 
             await _repository.AddIngredientToRecipeAsync(recipeId, ingredient, cancellationToken);

@@ -1,8 +1,9 @@
-﻿namespace TasteItApi.Models
+namespace TasteItApi.Models
 {
     public class CommentOnUser
     {
-        public string comment { get; set; }
-        public string dateCreated { get; set; }
+        public string comment { get; set; } = string.Empty;
+        public string dateCreated { get; set; } = string.Empty;
     }
 }
+

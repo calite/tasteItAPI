@@ -1,4 +1,4 @@
-﻿namespace TasteItApi.Models
+namespace TasteItApi.Models
 {
     public class FirebaseUser
     {
@@ -16,3 +16,4 @@
         }
     }
 }
+

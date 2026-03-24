@@ -1,7 +1,8 @@
-﻿namespace TasteItApi.Requests
+namespace TasteItApi.Requests
 {
     public class DeleteUserRequest
     {
-        public string token { get; set; }
+        public string token { get; set; } = string.Empty;
     }
 }
+

@@ -1,15 +1,16 @@
-﻿namespace TasteItApi.Requests
+namespace TasteItApi.Requests
 {
     public class RecipeRequest
     {
-        public string token { get; set; }
-        public string name { get; set; }
-        public string description { get; set; }
-        public string country { get; set; }
-        public string image { get; set; }
+        public string token { get; set; } = string.Empty;
+        public string name { get; set; } = string.Empty;
+        public string description { get; set; } = string.Empty;
+        public string country { get; set; } = string.Empty;
+        public string image { get; set; } = string.Empty;
         public int difficulty { get; set; }
-        public string[] ingredients { get; set; }
-        public string[] steps { get; set; }
+        public string[] ingredients { get; set; } = Array.Empty<string>();
+        public string[] steps { get; set; } = Array.Empty<string>();
 
     }
 }
+

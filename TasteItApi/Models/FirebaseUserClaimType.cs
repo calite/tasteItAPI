@@ -1,4 +1,4 @@
-﻿namespace TasteItApi.Models
+namespace TasteItApi.Models
 {
     public static class FirebaseUserClaimType
     {
@@ -8,3 +8,4 @@
         public const string EMAIL_VERIFIED = "email_verified";
     }
 }
+

@@ -1,4 +1,4 @@
-﻿namespace TasteItApi.Requests
+namespace TasteItApi.Requests
 {
     public class ChangeStateRecipeRequest
     {
@@ -6,3 +6,4 @@
         public bool value { get; set; }
     }
 }
+

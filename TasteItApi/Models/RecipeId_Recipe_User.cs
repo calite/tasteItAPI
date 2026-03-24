@@ -1,4 +1,4 @@
-﻿namespace TasteItApi.Models
+namespace TasteItApi.Models
 {
     public class RecipeId_Recipe_User
     {
@@ -7,3 +7,4 @@
         public  User User { get; set; }
     }
 }
+
